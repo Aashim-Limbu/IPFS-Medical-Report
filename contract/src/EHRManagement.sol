@@ -2,8 +2,9 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {console, Test} from "forge-std/Test.sol";
 
-contract EHRManagement is ReentrancyGuard {
+contract EHRManagement is ReentrancyGuard, Test {
     /*//////////////////////////////////////////////////////////////
                               DECLARATION
     //////////////////////////////////////////////////////////////*/
@@ -22,10 +23,17 @@ contract EHRManagement is ReentrancyGuard {
 
     mapping(address => Role) private s_roles;
     mapping(address => uint256) private s_fileCounter;
+
+    //[Consumer] > [fileId] > [ProviderAddress] address(patient) --> address(doctor)
     mapping(address => mapping(uint256 => address)) private s_patientFiles;
+
+    // [uploader] > [fileId] > File
     mapping(address => mapping(uint256 => File)) private s_addressToFiles;
+
+    // [granter] > [fileId] > [consumer] > bool
     mapping(address => mapping(uint256 => mapping(address => bool)))
         private s_authorize;
+    // [Consumer] > [Granter] > [file_id] > bool
     mapping(address => mapping(address => mapping(uint256 => bool)))
         private s_paid;
 
@@ -86,6 +94,11 @@ contract EHRManagement is ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function registerUserAsDoctor() public {
+        console.log(
+            "Current role before registration:",
+            uint(s_roles[msg.sender])
+        );
+        console.log("Address trying to register:", msg.sender);
         if (s_roles[msg.sender] == Role.DOCTOR) {
             revert EHRManagement__AlreadyRegisteredAsDoctor();
         }
@@ -103,6 +116,7 @@ contract EHRManagement is ReentrancyGuard {
 
     function grantAccess(address _user, uint256 _fileCounter) public {
         File memory file = s_addressToFiles[msg.sender][_fileCounter];
+        console.log("file", file.file);
         if (bytes(file.file).length == 0) {
             revert EHRManagement__FileNotFound();
         }
@@ -117,6 +131,12 @@ contract EHRManagement is ReentrancyGuard {
         uint256 fileCounter = s_fileCounter[msg.sender];
         File memory newFile = File({file: _ipfsHash, fee: _fee});
         s_addressToFiles[msg.sender][fileCounter] = newFile;
+        console.log(
+            "uploadReport file: ",
+            s_addressToFiles[msg.sender][fileCounter].file,
+            "fileCounter: ",
+            fileCounter
+        );
         emit FileUploaded(msg.sender, fileCounter, _ipfsHash, _fee);
         s_fileCounter[msg.sender]++;
     }
@@ -156,7 +176,7 @@ contract EHRManagement is ReentrancyGuard {
     function viewReport(
         address _granter,
         uint256 _fileCounter
-    ) public view onlyPatients returns (File memory) {
+    ) public view returns (File memory) {
         if (s_authorize[_granter][_fileCounter][msg.sender] != true) {
             revert EHRManagement__PermissionDenied(msg.sender);
         }
@@ -164,5 +184,36 @@ contract EHRManagement is ReentrancyGuard {
             revert EHRManagement__PaymentNotFound(msg.sender);
         }
         return s_addressToFiles[_granter][_fileCounter];
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                GETTERS
+    //////////////////////////////////////////////////////////////*/
+    function getRoles(address user) public view returns (Role) {
+        return s_roles[user];
+    }
+
+    function getFile(
+        address user,
+        uint256 fileCounter
+    ) public view returns (string memory, uint256) {
+        File memory file = s_addressToFiles[user][fileCounter];
+        return (file.file, file.fee);
+    }
+
+    function getAutorizationStatus(
+        address granter,
+        uint256 fileid,
+        address consumer
+    ) public view returns (bool) {
+        return s_authorize[granter][fileid][consumer];
+    }
+
+    function getPaymentStatus(
+        address consumer,
+        address granter,
+        uint256 fileId
+    ) public view returns (bool) {
+        return s_paid[consumer][granter][fileId];
     }
 }
