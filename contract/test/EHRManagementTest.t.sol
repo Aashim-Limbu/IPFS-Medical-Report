@@ -18,10 +18,9 @@ contract EHRManagementTest is Test {
 
     function testRegisterUserAsDoctor() public {
         console.log("Initial role:", uint(ehrManagement.getRoles(doctor)));
-
         assertEq(
             uint(ehrManagement.getRoles(doctor)),
-            0, // Assuming 0 is the default/unset role
+            0,
             "Role should be unset before registration"
         );
         vm.prank(doctor);
@@ -42,21 +41,22 @@ contract EHRManagementTest is Test {
     }
 
     function testUploadReport() public {
-        vm.prank(doctor);
-        // ehrManagement.registerUserAsDoctor();
+        vm.startPrank(doctor);
+        ehrManagement.registerUserAsDoctor();
         ehrManagement.uploadReport("QmTestIPFSHash", 0.1 ether);
-
+        assertEq(ehrManagement.getFileCounterStatus(), 1);
+        vm.stopPrank();
         (string memory file, uint256 fee) = ehrManagement.getFile(doctor, 0);
         assertEq(file, "QmTestIPFSHash");
         assertEq(fee, 0.1 ether);
     }
 
     function testGrantAccess() public {
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehrManagement.uploadReport("QmTestIPFSHash", 0.1 ether);
-        // ehrManagement.registerUserAsDoctor();
-        vm.prank(doctor);
+        ehrManagement.registerUserAsDoctor();
         ehrManagement.grantAccess(patient, 0);
+        vm.stopPrank();
 
         bool authorized = ehrManagement.getAutorizationStatus(
             doctor,
@@ -67,11 +67,11 @@ contract EHRManagementTest is Test {
     }
 
     function testBuyReport() public {
-        vm.prank(doctor);
-        // ehrManagement.registerUserAsDoctor();
+        vm.startPrank(doctor);
+        ehrManagement.registerUserAsDoctor();
         ehrManagement.uploadReport("QmTestIPFSHash", 0.1 ether);
-        vm.prank(doctor);
         ehrManagement.grantAccess(patient, 0);
+        vm.stopPrank();
 
         vm.prank(patient);
         ehrManagement.registerUserAsPatient();
@@ -87,5 +87,37 @@ contract EHRManagementTest is Test {
         );
         assertEq(testFile.file, "QmTestIPFSHash");
         assertEq(testFile.fee, 0.1 ether);
+    }
+
+    function testDoctorUploadFileAndPatientForwardToOtherDoctor() public {
+        // Doctor1 uploads a file
+        address doctor1 = makeAddr("DOCTOR1");
+        address doctor2 = makeAddr("DOCTOR2");
+        hoax(doctor1, 1 ether);
+        hoax(doctor2, 1 ether);
+        vm.prank(doctor1);
+        ehrManagement.uploadReport("QmTestIPFSHash", 0.1 ether); // Doctor1 grants access to patient
+        vm.prank(doctor1);
+        ehrManagement.grantAccess(patient, 0); // Patient buys the report from Doctor1
+        vm.prank(patient);
+        ehrManagement.buyReport{value: 0.1 ether}(doctor1, 0); // Patient forwards the report to Doctor2
+        vm.prank(patient);
+        ehrManagement.uploadReport("QmTestIPFSHashFromPatient", 0.1 ether);
+        vm.startPrank(patient);
+        ehrManagement.grantAccess(doctor2, 0); // Check if the forward is logged correctly
+        uint256 fileCounter = ehrManagement.getFileCounterStatus();
+        address originalDoctor = ehrManagement.getForwardedAddress(0);
+        assertEq(originalDoctor, doctor1); // Verify Doctor2 can view the forwarded report
+        vm.stopPrank();
+        vm.prank(doctor2);
+        EHRManagement.File memory forwardedFile = ehrManagement.viewReport(
+            patient,
+            0
+        );
+        assertEq(forwardedFile.file, "QmTestIPFSHashFromPatient");
+        assertEq(forwardedFile.fee, 0.1 ether); // Verify the original doctor and file
+        (string memory file, uint256 fee) = ehrManagement.getFile(doctor1, 0);
+        assertEq(file, "QmTestIPFSHash");
+        assertEq(fee, 0.1 ether);
     }
 }
