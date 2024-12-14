@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
+import {AggregatorV3Interface} from "@chainlink/contracts/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {PriceConverter} from "./PriceConverter.sol";
+
 contract EHRManagement {
+    using PriceConverter for uint256;
     // Roles
     enum Role {
         NONE,
@@ -27,6 +31,7 @@ contract EHRManagement {
 
     // Global counter for unique file IDs
     uint256 private s_globalFileCounter;
+    AggregatorV3Interface private s_priceFeed;
 
     // Events
     event RoleAssigned(address indexed user, Role role);
@@ -83,6 +88,10 @@ contract EHRManagement {
         _;
     }
 
+    constructor(address _priceFeed) {
+        s_priceFeed = AggregatorV3Interface(_priceFeed);
+    }
+
     // Role assignment
     function assignRole(address _user, Role _role) external {
         s_roles[_user] = _role;
@@ -92,18 +101,18 @@ contract EHRManagement {
     // Upload a medical report
     function uploadReport(
         string memory _ipfsHash,
-        uint256 _fee
-    ) external onlyDoctor {
+        uint256 _fee // in USD
+    ) external {
         uint256 newFileId = s_globalFileCounter++;
         s_addressToFiles[msg.sender][newFileId] = File({
             fileHash: keccak256(abi.encodePacked(_ipfsHash)),
-            fee: _fee
+            fee: _fee * 1e18
         });
         emit FileUploaded(
             msg.sender,
             newFileId,
             keccak256(abi.encodePacked(_ipfsHash)),
-            _fee
+            _fee * 1e18
         );
     }
 
@@ -143,10 +152,20 @@ contract EHRManagement {
         if (file.fee == 0) {
             revert EHRManagement__FileNotFound();
         }
-        if (msg.value < file.fee) {
-            revert EHRManagement__InsufficientPayment(file.fee, msg.value);
+
+        uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
+
+        if (equivalentUSD < file.fee) {
+            revert EHRManagement__InsufficientPayment(file.fee, equivalentUSD);
         }
         s_access[_doctor][_fileId][msg.sender].paid = true;
+
+        // Transfer payment to the doctor
+        (bool success, ) = _doctor.call{value: msg.value}("");
+        if (!success) {
+            revert("Payment transfer to doctor failed");
+        }
+
         emit PaymentReceived(msg.sender, _doctor, _fileId, msg.value);
     }
 
@@ -157,7 +176,7 @@ contract EHRManagement {
     ) external view validRole returns (bytes32) {
         FileAccess memory access = s_access[_owner][_fileId][msg.sender];
         if (
-            !access.authorized ||
+            !access.authorized &&
             (s_roles[msg.sender] == Role.PATIENT && !access.paid)
         ) {
             revert EHRManagement__PermissionDenied(msg.sender);
@@ -185,5 +204,9 @@ contract EHRManagement {
     ) external view returns (bool authorized, bool paid) {
         FileAccess memory fileAccess = s_access[granter][fileId][msg.sender];
         return (fileAccess.authorized, fileAccess.paid);
+    }
+
+    function getFeed() external view returns (AggregatorV3Interface) {
+        return s_priceFeed;
     }
 }

@@ -3,10 +3,13 @@ pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
 import {EHRManagement} from "src/EHRManagement.sol";
+import {PriceConverter} from "src/PriceConverter.sol";
 import {DeployEHRManagement} from "script/DeployEHRManagement.s.sol";
+import {HelperConfig} from "script/HelperConfig.s.sol";
 
 contract EHRManagementTest is Test {
     EHRManagement ehr;
+    HelperConfig helperConfig;
     address owner;
     address doctor;
     address patient;
@@ -15,7 +18,7 @@ contract EHRManagementTest is Test {
     function setUp() public {
         // Deploy the contract
         DeployEHRManagement deployer = new DeployEHRManagement();
-        ehr = deployer.deployContract();
+        (ehr, helperConfig) = deployer.deployContract();
         owner = address(this);
         doctor = makeAddr("DOCTOR");
         patient = makeAddr("PATIENT");
@@ -44,19 +47,18 @@ contract EHRManagementTest is Test {
     function testUploadReport() public {
         // Upload a report as a doctor
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
-
+        ehr.uploadReport("QmTestHash", 5); //probably USD
         // Verify the file
         (bytes32 fileHash, uint256 fee) = ehr.getMyFile(0);
         vm.stopPrank();
         assertEq(fileHash, keccak256(abi.encodePacked("QmTestHash")));
-        assertEq(fee, 1 ether);
+        assertEq(fee, 5 * 1e18);
     }
 
     function testGrantAccess() public {
         // Upload a report
         vm.prank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", 50);
 
         // Grant access to the patient
         vm.prank(doctor);
@@ -72,13 +74,13 @@ contract EHRManagementTest is Test {
     function testPayForAccess() public {
         // Upload a report and grant access
         vm.prank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", 50);
         vm.prank(doctor);
         ehr.grantAccess(patient, 0);
 
         // Pay for access
         vm.startPrank(patient);
-        ehr.payForAccess{value: 1 ether}(doctor, 0);
+        ehr.payForAccess{value: 0.025 ether}(doctor, 0);
 
         // Verify payment
 
@@ -91,7 +93,7 @@ contract EHRManagementTest is Test {
     function testRetrieveFile() public {
         // Upload a report, grant access, and pay
         vm.prank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", 2000);
         vm.prank(doctor);
         ehr.grantAccess(patient, 0);
         vm.prank(patient);
@@ -137,18 +139,15 @@ contract EHRManagementTest is Test {
     }
 
     function testMultiplePatientHandover() public {
-        address patient2 = makeAddr("PATIENT2");
-        vm.deal(patient2, 10 ether);
-
         vm.startPrank(doctor);
         vm.expectEmit(true, true, false, true, address(ehr));
         emit EHRManagement.FileUploaded(
             doctor,
             0,
             keccak256(abi.encodePacked("QmTestHash")),
-            1 ether
+            50 * 1e18
         );
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", 50);
         // Doctor grants access
         vm.expectEmit(true, true, true, false, address(ehr));
         emit EHRManagement.AccessGranted(doctor, patient, 0);
@@ -159,11 +158,21 @@ contract EHRManagementTest is Test {
         vm.startPrank(patient);
 
         // Patient retrieves the file
-        ehr.payForAccess{value: 1 ether}(doctor, 0);
+        ehr.payForAccess{value: 0.025 ether}(doctor, 0);
         bytes32 filehash = ehr.retrieveFile(doctor, 0);
         assertEq(filehash, keccak256(abi.encodePacked("QmTestHash"))); // Assertion
 
-        // Stop prank for patient (optional but clean)
         vm.stopPrank();
+        address patient2 = makeAddr("PATIENT2");
+        vm.deal(patient2, 10 ether);
+        vm.startPrank(patient2);
+        ehr.assignRole(patient2, EHRManagement.Role.PATIENT);
+        ehr.uploadReport("QmTestHash", 50);
+        vm.expectEmit(true, true, true, false, address(ehr));
+        emit EHRManagement.AccessGranted(patient2, doctor, 1);
+        ehr.grantAccess(doctor, 1);
+        vm.stopPrank();
+        vm.prank(doctor);
+        ehr.retrieveFile(patient2, 1);
     }
 }
