@@ -1,40 +1,40 @@
 "use client"
-import { BrowserProvider, Contract } from 'ethers';
-import { ethers } from 'ethers'
-import abiContract from "@/contract/out/EHRManagement.sol/EHRManagement.json";
-import React, { useState } from 'react'
+
+import { FormEvent } from "react"
+import { useWallet } from "../_context/WalletContext";
+
+
 function WalletForm() {
-    const [provider, setProvider] = useState<BrowserProvider | null>(null);
-    const [contract, setContract] = useState<Contract | null>(null);
-    async function handleConnect() {
-        if (!window.ethereum) {
-            alert("Please install MetaMask !!");
-            return
-        }
-        const newProvider = (new ethers.BrowserProvider(window.ethereum));
-        setProvider(newProvider);
-        if (!provider) {
-            alert("Failed to initialize provider . Please try again.")
-            return
-        }
-        try {
-            await provider.send("eth_requestAccounts", []);
-            const signer = await provider.getSigner();
-            const newContract = new Contract(process.env.CONTRACT_ADDRESS!, abiContract.abi, signer);
-            setContract(newContract)
-            alert("Wallet connected Successfully");
-        } catch (error) {
-            if (error instanceof Error) {
-                console.log("error.message", error.message);
-                alert(error.message);
-            } else {
-                alert("Failed to connect with wallet");
-            }
-        }
+    // const [account, setAccount] = useState()
+    // const [provider, setProvider] = useState<BrowserProvider | null>()
+    // async function handleConnect(e: FormEvent) {
+    //     e.preventDefault();
+    //     if (window.ethereum == undefined) {
+    //         alert("Metamask wallet is not installed");
+    //         return
+    //     } else {
+    //         const newprovider = new BrowserProvider(window.ethereum)
+    //         const accounts = await newprovider.send("eth_requestAccounts", []);
+    //         const account = accounts[0];
+    //         setProvider(newprovider)
+    //         setAccount(account)
+    //         console.log("Provider: ", newprovider)
+    //     }
+    // }
+    const { account, connectWallet } = useWallet();
+    async function handleConnect(e: FormEvent) {
+        e.preventDefault();
+        await connectWallet();
     }
     return (
-        <form className='w-full'>
-            <button className='bg-stone-600 p-2 rounded-md hover:bg-stone-500 font-semibold text-white w-full' onClick={handleConnect} type='submit'>Connect to Metamask</button>
+        <form className='w-full' onSubmit={handleConnect}>
+            <div>
+                Account:
+                <span className="text-gray-800 ml-2 font-semibold">
+                    {account}
+                </span>
+            </div>
+            <button className='bg-stone-600 p-2 rounded-md hover:bg-stone-500 font-semibold text-white w-full' type='submit'>Connect to Metamask</button>
         </form>
     )
 }
