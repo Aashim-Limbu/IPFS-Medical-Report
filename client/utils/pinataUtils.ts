@@ -1,7 +1,8 @@
-import { PinataSDK } from "pinata-web3";
+"server only"
 
-const pinata = new PinataSDK({
-    pinataJwt: process.env.PINIATA_JWT as string,
-    pinataGateway: "example-gateway.mypinata.cloud",
-});
-export default pinata;
+import { PinataSDK } from "pinata-web3"
+
+export const pinata = new PinataSDK({
+  pinataJwt: `${process.env.PINATA_JWT}`,
+  pinataGateway: `${process.env.NEXT_PUBLIC_GATEWAY_URL}`
+})
