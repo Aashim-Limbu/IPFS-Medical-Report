@@ -32,6 +32,7 @@ function FileUpload() {
             }
         } else {
             console.log('No file selected.');
+            alert("No file Selected");
         }
     }
 
