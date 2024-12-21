@@ -142,11 +142,15 @@ contract EHRManagementTest is Test {
         vm.startPrank(doctor);
         vm.expectEmit(true, true, false, true, address(ehr));
         emit EHRManagement.FileUploaded(
-            doctor,
-            0,
-            keccak256(abi.encodePacked("QmTestHash")),
+            doctor,0,keccak256(abi.encodePacked("QmTestHash")),
             50 * 1e18
         );
+        //         emit EHRManagement.FileUploaded(
+        //     doctor,
+        //     0,
+        //     keccak256(abi.encodePacked("QmTestHash")),
+        //     50 * 1e18
+        // );
         ehr.uploadReport("QmTestHash", 50);
         // Doctor grants access
         vm.expectEmit(true, true, true, false, address(ehr));
