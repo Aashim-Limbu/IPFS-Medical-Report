@@ -53,3 +53,6 @@ mintReactionNft:
 
 flipMoodNft:
 	@forge script script/Interactions.s.sol:FlipMoodNft $(NETWORK_ARGS)
+
+zkdeploy:
+	@forge create sscript/Interactions.s.sol:FlipMoodNft--rpc-url http://127.0.0.1:8011 --private-key $(DEFAULT_ZKSYNC_LOCAL_KEY) --legacy --zksync

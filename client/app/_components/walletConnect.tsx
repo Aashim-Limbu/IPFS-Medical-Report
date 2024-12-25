@@ -20,11 +20,12 @@ function WalletForm() {
   //         console.log("Provider: ", newprovider)
   //     }
   // }
-  const { account, connectWallet } = useWallet();
+  const { account, connectWallet, handleDisconnect } = useWallet();
   async function handleConnect(e: FormEvent) {
     e.preventDefault();
     await connectWallet();
   }
+
   return (
     <form className="w-full" onSubmit={handleConnect}>
       <div>
@@ -36,6 +37,13 @@ function WalletForm() {
         type="submit"
       >
         Connect to Metamask
+      </button>
+      <button
+        className="bg-slate-600 mt-2 p-2 rounded-md hover:bg-slate-500 font-semibold text-white w-full"
+        onClick={handleDisconnect}
+        type="button"
+      >
+        Disconnect Metamask
       </button>
     </form>
   );
