@@ -47,85 +47,95 @@ contract EHRManagementTest is Test {
     function testUploadReport() public {
         // Upload a report as a doctor
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 5); //probably USD
+        ehr.uploadReport("QmTestHash", 5); // Fee in USD, assuming precision (1e18)
         // Verify the file
-        (bytes32 fileHash, uint256 fee) = ehr.getMyFile(0);
+        (string memory fileHash, uint256 fee) = ehr.getMyFile(0);
         vm.stopPrank();
-        assertEq(fileHash, keccak256(abi.encodePacked("QmTestHash")));
+        assertEq(fileHash, "QmTestHash");
         assertEq(fee, 5 * 1e18);
     }
 
     function testGrantAccess() public {
         // Upload a report
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 50);
+        vm.stopPrank();
 
         // Grant access to the patient
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.grantAccess(patient, 0);
+        vm.stopPrank();
 
         // Verify access granted
-        vm.prank(patient);
+        vm.startPrank(patient);
         (bool authorized, bool paid) = ehr.getAccessToFile(doctor, 0);
         assertTrue(authorized);
         assertFalse(paid);
+        vm.stopPrank();
     }
 
     function testPayForAccess() public {
         // Upload a report and grant access
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 50);
-        vm.prank(doctor);
         ehr.grantAccess(patient, 0);
+        vm.stopPrank();
 
         // Pay for access
         vm.startPrank(patient);
         ehr.payForAccess{value: 0.025 ether}(doctor, 0);
+        vm.stopPrank();
 
         // Verify payment
-
+        vm.startPrank(patient);
         (bool authorized, bool paid) = ehr.getAccessToFile(doctor, 0);
-        vm.stopPrank();
         assertTrue(authorized);
         assertTrue(paid);
+        vm.stopPrank();
     }
 
     function testRetrieveFile() public {
         // Upload a report, grant access, and pay
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 2000);
-        vm.prank(doctor);
         ehr.grantAccess(patient, 0);
-        vm.prank(patient);
+        vm.stopPrank();
+
+        vm.startPrank(patient);
         ehr.payForAccess{value: 1 ether}(doctor, 0);
+        vm.stopPrank();
 
         // Retrieve the file
-        vm.prank(patient);
-        bytes32 retrievedHash = ehr.retrieveFile(doctor, 0);
-        assertEq(retrievedHash, keccak256(abi.encodePacked("QmTestHash")));
+        vm.startPrank(patient);
+        string memory retrievedHash = ehr.retrieveFile(doctor, 0);
+        assertEq(retrievedHash, "QmTestHash");
+        vm.stopPrank();
     }
 
     function testRevokeAccess() public {
         // Upload a report and grant access
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 1 ether);
-        vm.prank(doctor);
         ehr.grantAccess(patient, 0);
+        vm.stopPrank();
 
         // Revoke access
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.revokeAccess(patient, 0);
+        vm.stopPrank();
 
         // Verify access revoked
-        vm.prank(patient);
+        vm.startPrank(patient);
         (bool authorized, ) = ehr.getAccessToFile(doctor, 0);
         assertFalse(authorized);
+        vm.stopPrank();
     }
 
     function testUnauthorizedAccess() public {
         // Upload a report
-        vm.prank(doctor);
+        vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 1 ether);
+        vm.stopPrank();
 
         // Try retrieving without access
         vm.expectRevert(
@@ -134,49 +144,41 @@ contract EHRManagementTest is Test {
                 other
             )
         );
-        vm.prank(other);
+        vm.startPrank(other);
         ehr.retrieveFile(doctor, 0);
+        vm.stopPrank();
     }
 
     function testMultiplePatientHandover() public {
         vm.startPrank(doctor);
         vm.expectEmit(true, true, false, true, address(ehr));
-        emit EHRManagement.FileUploaded(
-            doctor,0,keccak256(abi.encodePacked("QmTestHash")),
-            50 * 1e18
-        );
-        //         emit EHRManagement.FileUploaded(
-        //     doctor,
-        //     0,
-        //     keccak256(abi.encodePacked("QmTestHash")),
-        //     50 * 1e18
-        // );
+        emit EHRManagement.FileUploaded(doctor, 0, "QmTestHash", 50 * 1e18);
         ehr.uploadReport("QmTestHash", 50);
         // Doctor grants access
         vm.expectEmit(true, true, true, false, address(ehr));
         emit EHRManagement.AccessGranted(doctor, patient, 0);
         ehr.grantAccess(patient, 0);
-
         vm.stopPrank();
-        // Start prank for patient
-        vm.startPrank(patient);
 
         // Patient retrieves the file
+        vm.startPrank(patient);
         ehr.payForAccess{value: 0.025 ether}(doctor, 0);
-        bytes32 filehash = ehr.retrieveFile(doctor, 0);
-        assertEq(filehash, keccak256(abi.encodePacked("QmTestHash"))); // Assertion
-
+        string memory filehash = ehr.retrieveFile(doctor, 0);
+        assertEq(filehash, "QmTestHash");
         vm.stopPrank();
+
         address patient2 = makeAddr("PATIENT2");
         vm.deal(patient2, 10 ether);
         vm.startPrank(patient2);
         ehr.assignRole(patient2, EHRManagement.Role.PATIENT);
         ehr.uploadReport("QmTestHash", 50);
         vm.expectEmit(true, true, true, false, address(ehr));
-        emit EHRManagement.AccessGranted(patient2, doctor, 1);
-        ehr.grantAccess(doctor, 1);
+        emit EHRManagement.AccessGranted(patient2, doctor, 0);
+        ehr.grantAccess(doctor, 0);
         vm.stopPrank();
-        vm.prank(doctor);
-        ehr.retrieveFile(patient2, 1);
+
+        vm.startPrank(doctor);
+        ehr.retrieveFile(patient2, 0);
+        vm.stopPrank();
     }
 }

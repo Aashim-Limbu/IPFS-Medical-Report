@@ -6,6 +6,7 @@ import {PriceConverter} from "./PriceConverter.sol";
 
 contract EHRManagement {
     using PriceConverter for uint256;
+
     // Roles
     enum Role {
         NONE,
@@ -14,7 +15,7 @@ contract EHRManagement {
     }
 
     struct File {
-        bytes32 fileHash; // Optimized to bytes32 for gas efficiency
+        string fileHash;
         uint256 fee;
     }
 
@@ -25,12 +26,11 @@ contract EHRManagement {
 
     // Mappings
     mapping(address => Role) private s_roles;
-    mapping(address => mapping(uint256 => File)) private s_addressToFiles;
+    mapping(address => File[]) private s_addressToFiles; // Now an array of files for each address
     mapping(address => mapping(uint256 => mapping(address => FileAccess)))
         private s_access;
 
     // Global counter for unique file IDs
-    uint256 private s_globalFileCounter;
     AggregatorV3Interface private s_priceFeed;
 
     // Events
@@ -38,7 +38,7 @@ contract EHRManagement {
     event FileUploaded(
         address indexed doctor,
         uint256 indexed fileId,
-        bytes32 fileHash,
+        string fileHash,
         uint256 fee
     );
     event AccessGranted(
@@ -99,29 +99,17 @@ contract EHRManagement {
     }
 
     // Upload a medical report
-    function uploadReport(
-        string memory _ipfsHash,
-        uint256 _fee // in USD
-    ) external {
-        uint256 newFileId = s_globalFileCounter++;
-        s_addressToFiles[msg.sender][newFileId] = File({
-            fileHash: keccak256(abi.encodePacked(_ipfsHash)),
-            fee: _fee * 1e18
-        });
-        emit FileUploaded(
-            msg.sender,
-            newFileId,
-            keccak256(abi.encodePacked(_ipfsHash)),
-            _fee * 1e18
+    function uploadReport(string memory _ipfsHash, uint256 _fee) external {
+        uint256 newFileId = s_addressToFiles[msg.sender].length;
+        s_addressToFiles[msg.sender].push(
+            File({fileHash: _ipfsHash, fee: _fee * 1e18})
         );
+        emit FileUploaded(msg.sender, newFileId, _ipfsHash, _fee * 1e18);
     }
 
     // Grant access to a file
     function grantAccess(address _grantee, uint256 _fileId) external validRole {
-        if (
-            bytes32(s_addressToFiles[msg.sender][_fileId].fileHash) ==
-            bytes32(0)
-        ) {
+        if (_fileId >= s_addressToFiles[msg.sender].length) {
             revert EHRManagement__FileNotFound();
         }
         s_access[msg.sender][_fileId][_grantee] = FileAccess({
@@ -149,12 +137,11 @@ contract EHRManagement {
         uint256 _fileId
     ) external payable onlyPatient {
         File memory file = s_addressToFiles[_doctor][_fileId];
-        if (file.fee == 0) {
+        if (bytes(file.fileHash).length == 0) {
             revert EHRManagement__FileNotFound();
         }
 
         uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
-
         if (equivalentUSD < file.fee) {
             revert EHRManagement__InsufficientPayment(file.fee, equivalentUSD);
         }
@@ -173,7 +160,11 @@ contract EHRManagement {
     function retrieveFile(
         address _owner,
         uint256 _fileId
-    ) external view validRole returns (bytes32) {
+    ) external view validRole returns (string memory) {
+        if (_fileId >= s_addressToFiles[_owner].length) {
+            revert EHRManagement__FileNotFound();
+        }
+
         FileAccess memory access = s_access[_owner][_fileId][msg.sender];
         if (
             !access.authorized &&
@@ -193,7 +184,7 @@ contract EHRManagement {
 
     function getMyFile(
         uint256 fileCounter
-    ) external view returns (bytes32 fHash, uint256 fee) {
+    ) external view returns (string memory fHash, uint256 fee) {
         File memory file = s_addressToFiles[msg.sender][fileCounter];
         return (file.fileHash, file.fee);
     }
