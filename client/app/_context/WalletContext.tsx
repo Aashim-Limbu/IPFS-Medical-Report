@@ -36,6 +36,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const newProvider = new BrowserProvider(window.ethereum);
     const accounts = await newProvider.send("eth_requestAccounts", []);
     const selectedAccount = accounts[0];
+    console.log("selectedAccount: ", selectedAccount);
     const newSigner = await newProvider.getSigner();
 
     // Create a contract instance for state-changing operations (requires a signer)

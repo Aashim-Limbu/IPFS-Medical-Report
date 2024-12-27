@@ -4,22 +4,6 @@ import { FormEvent } from "react";
 import { useWallet } from "../_context/WalletContext";
 
 function WalletForm() {
-  // const [account, setAccount] = useState()
-  // const [provider, setProvider] = useState<BrowserProvider | null>()
-  // async function handleConnect(e: FormEvent) {
-  //     e.preventDefault();
-  //     if (window.ethereum == undefined) {
-  //         alert("Metamask wallet is not installed");
-  //         return
-  //     } else {
-  //         const newprovider = new BrowserProvider(window.ethereum)
-  //         const accounts = await newprovider.send("eth_requestAccounts", []);
-  //         const account = accounts[0];
-  //         setProvider(newprovider)
-  //         setAccount(account)
-  //         console.log("Provider: ", newprovider)
-  //     }
-  // }
   const { account, connectWallet, handleDisconnect } = useWallet();
   async function handleConnect(e: FormEvent) {
     e.preventDefault();
