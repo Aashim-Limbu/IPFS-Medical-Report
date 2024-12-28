@@ -61,6 +61,7 @@ contract EHRManagement {
     // Custom errors
     error EHRManagement__PermissionDenied(address user);
     error EHRManagement__FileNotFound();
+    error EHRManagement__RoleAlreadyAssigned(address user, Role role);
     error EHRManagement__InsufficientPayment(
         uint256 required,
         uint256 provided
@@ -94,12 +95,18 @@ contract EHRManagement {
 
     // Role assignment
     function assignRole(address _user, Role _role) external {
+        if (s_roles[_user] != Role.NONE) {
+            revert EHRManagement__RoleAlreadyAssigned(_user, s_roles[_user]);
+        }
         s_roles[_user] = _role;
         emit RoleAssigned(_user, _role);
     }
 
     // Upload a medical report
-    function uploadReport(string memory _ipfsHash, uint256 _fee) external {
+    function uploadReport(
+        string memory _ipfsHash,
+        uint256 _fee
+    ) external validRole {
         uint256 newFileId = s_addressToFiles[msg.sender].length;
         s_addressToFiles[msg.sender].push(
             File({fileHash: _ipfsHash, fee: _fee * 1e18})

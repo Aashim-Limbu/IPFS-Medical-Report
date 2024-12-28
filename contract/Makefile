@@ -41,18 +41,3 @@ endif
 
 deploy:
 	@forge script script/DeployEHRManagement.s.sol:DeployEHRManagement $(NETWORK_ARGS)
-
-mint:
-	@forge script script/Interactions.s.sol:MintNFT $(NETWORK_ARGS)
-
-deployReaction:
-	@forge script script/DeployReactionNFT.s.sol:DeployReactionNFT $(NETWORK_ARGS)
-
-mintReactionNft:
-	@forge script script/Interactions.s.sol:MintReactionNFT $(NETWORK_ARGS)
-
-flipMoodNft:
-	@forge script script/Interactions.s.sol:FlipMoodNft $(NETWORK_ARGS)
-
-zkdeploy:
-	@forge create sscript/Interactions.s.sol:FlipMoodNft--rpc-url http://127.0.0.1:8011 --private-key $(DEFAULT_ZKSYNC_LOCAL_KEY) --legacy --zksync
