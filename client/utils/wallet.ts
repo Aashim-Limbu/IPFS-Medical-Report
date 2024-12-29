@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import { BrowserProvider } from "ethers";
+import { BrowserProvider, WebSocketProvider } from "ethers";
 import contractAbi from "@/../contract/out/EHRManagement.sol/EHRManagement.json";
 export async function connectWallet() {
   if (!window.ethereum) {
@@ -10,9 +10,28 @@ export async function connectWallet() {
   const signer = await newProvider.getSigner();
   const selectedAccount = accounts[0];
   const contractWithSignerInstance = new Contract(
-    "0x392Ec3267c4958D4BE4e8B0984Ca2B93b9Ad4bA2",
+    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
     contractAbi.abi,
     signer
   );
-  return { contractWithSignerInstance, selectedAccount };
+  const contractWithProviderInstance = new Contract(
+    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    contractAbi.abi,
+    newProvider
+  );
+  return {
+    contractWithSignerInstance,
+    contractWithProviderInstance,
+    selectedAccount,
+  };
+}
+export function getContractWithAlchemy() {
+  const wsProvider = new WebSocketProvider(
+    "wss://eth-sepolia.g.alchemy.com/v2/a7Vl3j7Q6iy2YO6aatVP2IMNJi5on4NI"
+  );
+  return new Contract(
+    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    contractAbi.abi,
+    wsProvider
+  );
 }

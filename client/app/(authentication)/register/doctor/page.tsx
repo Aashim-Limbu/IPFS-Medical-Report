@@ -1,19 +1,50 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Doctor from "@/public/doctor-svg.svg";
-import { connectWallet } from "@/utils/wallet";
+import { connectWallet, getContractWithAlchemy } from "@/utils/wallet";
 import { Contract } from "ethers";
 
 function DoctorRegisterPage() {
   const [account, setAccount] = useState<string | null>(null);
-  const [contract, setContract] = useState<Contract | null>(null);
+  const [contractWithSigner, setContractWithSigner] = useState<Contract | null>(
+    null
+  );
+  const [contractWithProvider, setContractWithProvider] =
+    useState<Contract | null>(null);
+  useEffect(() => {
+    try {
+      const contractWithAlchemyProvider = getContractWithAlchemy();
+      if (!contractWithAlchemyProvider) return;
+
+      const handleRoleAssigned = (user, role) => {
+        console.log(`RoleAssigned event: User: ${user}, Role: ${role}`);
+      };
+
+      contractWithAlchemyProvider.on("RoleAssigned", handleRoleAssigned);
+
+      return () => {
+        contractWithAlchemyProvider.removeListener(
+          "RoleAssigned",
+          handleRoleAssigned
+        );
+      };
+    } catch (error) {
+      console.error("Error initializing contract with Alchemy: ", error);
+    }
+  }, []);
+
   async function handleConnect() {
     try {
       const response = await connectWallet();
-      const { contractWithSignerInstance, selectedAccount } = response;
+      const {
+        contractWithSignerInstance,
+        contractWithProviderInstance,
+        selectedAccount,
+      } = response;
       setAccount(selectedAccount);
-      setContract(contractWithSignerInstance);
+      setContractWithProvider(contractWithProviderInstance);
+      setContractWithSigner(contractWithSignerInstance);
     } catch (error) {
       if (error instanceof Error) {
         console.log(error);
@@ -23,10 +54,14 @@ function DoctorRegisterPage() {
       }
     }
   }
+
   async function handleRegister() {
     try {
-      if (!contract) throw new Error("Connect Wallet First");
-      const response = await contract.assignRole(account, 2);
+      console.log("Registering as Doctor...");
+      if (!contractWithSigner) throw new Error("Connect Wallet First");
+      const tx = await contractWithSigner.assignRole(account, 2);
+      await tx.wait();
+      console.log("Response: ", tx);
     } catch (error) {
       if (error instanceof Error) {
         console.log(error);
@@ -60,7 +95,10 @@ function DoctorRegisterPage() {
           >
             {account ? "Connected" : "Connect Wallet"}
           </button>
-          <button className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500">
+          <button
+            onClick={handleRegister}
+            className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500"
+          >
             Register Now
           </button>
         </div>

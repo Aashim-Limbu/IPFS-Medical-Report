@@ -41,14 +41,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     // Create a contract instance for state-changing operations (requires a signer)
     const contractWithSignerInstance = new Contract(
-      "0x392Ec3267c4958D4BE4e8B0984Ca2B93b9Ad4bA2",
+      "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       contractAbi.abi,
       newSigner
     );
 
     // Create a contract instance for read-only operations (uses the provider)
     const contractWithProviderInstance = new Contract(
-      "0x392Ec3267c4958D4BE4e8B0984Ca2B93b9Ad4bA2",
+      "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       contractAbi.abi,
       newProvider
     );

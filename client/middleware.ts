@@ -8,6 +8,9 @@ export function middleware(req: NextRequest) {
     if (isLoggedIn) {
       return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, req.url));
     }
+    if (req.nextUrl.pathname == "/register") {
+      return NextResponse.redirect(new URL("/register/patient", req.url));
+    }
     return;
   }
   if (!isLoggedIn && !isPublicRoute) {

@@ -1,26 +1,43 @@
 "use client";
 import useMultistepForm from "@/app/hooks/useMultistepForm";
-import next from "next";
 import { FormEvent, useState } from "react";
 import { useDropzone } from "react-dropzone";
-const INITIAL_STATE = {
+import { pinata } from "@/utils/pinataUtils";
+import { useWallet } from "@/app/_context/WalletContext";
+type STATE_TYPE = {
+  file: File | null;
+  fee: number;
+};
+const INITIAL_STATE: STATE_TYPE = {
   file: null,
   fee: 0,
 };
 function UploadPage() {
+  const { contractWithSigner } = useWallet();
   const [data, setData] = useState(INITIAL_STATE);
-  const { isFirstIndex, isLastIndex, next, back, step, currentIndex } =
-    useMultistepForm([
-      <First {...data} updateFields={updateFields} />,
-      <Second {...data} updateFields={updateFields} />,
-    ]);
+  console.log(data.file);
+  const { isFirstIndex, isLastIndex, next, back, step } = useMultistepForm([
+    <First key="first" {...data} updateFields={updateFields} />,
+    <Second key="second" {...data} updateFields={updateFields} />,
+  ]);
   function updateFields(fields: Partial<typeof INITIAL_STATE>) {
     setData((prev) => ({ ...prev, ...fields }));
   }
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!isLastIndex) return next();
-    console.log(data);
+    try {
+      console.log("submitting");
+      const keyRequest = await fetch("/api/key");
+      const keyData = await keyRequest.json();
+      const upload = await pinata.upload
+        .file(data.file as File)
+        .key(keyData.JWT);
+
+      console.log(upload.IpfsHash);
+    } catch (error) {
+      console.error("Error uploading to Pinata:", error);
+    }
   }
   return (
     <div className="min-h-screen bg-gray-500/80 flex items-center justify-center">
@@ -61,12 +78,13 @@ function First({
 }: {
   updateFields: (fields: Partial<typeof INITIAL_STATE>) => void;
 }) {
-  const { getRootProps, acceptedFiles, getInputProps, isDragActive } =
-    useDropzone({
-      multiple: false,
-      accept: { "image/*": [], "application/pdf": [] },
-    });
-  console.log(acceptedFiles[0]);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
+    accept: { "image/*": [], "application/pdf": [] },
+    onDrop: (file) => {
+      updateFields({ file: file[0] });
+    },
+  });
   return (
     <>
       <div className="font-semibold text-lg">Upload File</div>
@@ -91,8 +109,10 @@ function First({
 }
 function Second({
   updateFields,
+  fee,
 }: {
   updateFields: (fields: Partial<typeof INITIAL_STATE>) => void;
+  fee: number;
 }) {
   return (
     <div>
@@ -112,6 +132,8 @@ function Second({
             name="price"
             type="text"
             autoFocus
+            value={fee}
+            onChange={(e) => updateFields({ fee: Number(e.target.value) })}
             placeholder="0.00"
             aria-describedby="price-currency"
             className="block w-full rounded-md border-0 py-1.5 pl-7 pr-12 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
