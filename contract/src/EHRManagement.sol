@@ -108,6 +108,7 @@ contract EHRManagement {
         uint256 _fee
     ) external validRole {
         uint256 newFileId = s_addressToFiles[msg.sender].length;
+        //setting price in USD
         s_addressToFiles[msg.sender].push(
             File({fileHash: _ipfsHash, fee: _fee * 1e18})
         );
@@ -147,8 +148,8 @@ contract EHRManagement {
         if (bytes(file.fileHash).length == 0) {
             revert EHRManagement__FileNotFound();
         }
-
         uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
+        //paying in ETHEREUM
         if (equivalentUSD < file.fee) {
             revert EHRManagement__InsufficientPayment(file.fee, equivalentUSD);
         }
@@ -185,6 +186,11 @@ contract EHRManagement {
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
+    function getLatestPrice() public view returns (uint256) {
+        (, int price, , , ) = s_priceFeed.latestRoundData();
+        return uint256(price * 1e10); // Adjusting the price to 18 decimals
+    }
+
     function getAddressRole(address subject) external view returns (Role) {
         return s_roles[subject];
     }
@@ -206,5 +212,15 @@ contract EHRManagement {
 
     function getFeed() external view returns (AggregatorV3Interface) {
         return s_priceFeed;
+    }
+
+    function getFileFee(
+        address _owner,
+        uint256 _fileId
+    ) external view returns (uint256) {
+        if (_fileId >= s_addressToFiles[_owner].length) {
+            revert EHRManagement__FileNotFound();
+        }
+        return s_addressToFiles[_owner][_fileId].fee;
     }
 }

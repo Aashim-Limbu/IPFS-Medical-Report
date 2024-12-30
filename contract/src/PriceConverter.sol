@@ -20,4 +20,13 @@ library PriceConverter {
         uint ethinUSD = (currentFare * ethAmount) / (1e18); //since 1e18*1e18 leads to 1e36
         return ethinUSD;
     }
+
+    function getEquivalentETH(
+        uint256 usdAmount,
+        AggregatorV3Interface dataFeed
+    ) internal view returns (uint256) {
+        uint256 currentFare = getCurrentPrice(dataFeed);
+        uint256 usdinEth = (usdAmount * 1e18) / currentFare;
+        return usdinEth;
+    }
 }

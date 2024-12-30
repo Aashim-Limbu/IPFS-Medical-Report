@@ -9,13 +9,14 @@ export async function connectWallet() {
   const accounts = await newProvider.send("eth_requestAccounts", []);
   const signer = await newProvider.getSigner();
   const selectedAccount = accounts[0];
+  console.log(selectedAccount);
   const contractWithSignerInstance = new Contract(
-    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
     contractAbi.abi,
     signer
   );
   const contractWithProviderInstance = new Contract(
-    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
     contractAbi.abi,
     newProvider
   );
@@ -27,10 +28,10 @@ export async function connectWallet() {
 }
 export function getContractWithAlchemy() {
   const wsProvider = new WebSocketProvider(
-    "wss://eth-sepolia.g.alchemy.com/v2/a7Vl3j7Q6iy2YO6aatVP2IMNJi5on4NI"
+    "wss://eth-sepolia.g.alchemy.com/v2/F7KhIiU4v6TN9T7j1O7FhAqk7QMcdMPW"
   );
   return new Contract(
-    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
     contractAbi.abi,
     wsProvider
   );

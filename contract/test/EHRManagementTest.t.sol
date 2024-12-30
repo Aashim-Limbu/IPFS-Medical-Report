@@ -33,8 +33,14 @@ contract EHRManagementTest is Test {
         ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
-        assertEq(uint256(ehr.getAddressRole(doctor)), uint256(EHRManagement.Role.DOCTOR));
-        assertEq(uint256(ehr.getAddressRole(patient)), uint256(EHRManagement.Role.PATIENT));
+        assertEq(
+            uint256(ehr.getAddressRole(doctor)),
+            uint256(EHRManagement.Role.DOCTOR)
+        );
+        assertEq(
+            uint256(ehr.getAddressRole(patient)),
+            uint256(EHRManagement.Role.PATIENT)
+        );
     }
 
     function testCannotReassignRole() public {
@@ -49,7 +55,10 @@ contract EHRManagementTest is Test {
         );
         ehr.assignRole(doctor, EHRManagement.Role.PATIENT);
 
-        assertEq(uint(ehr.getAddressRole(doctor)), uint(EHRManagement.Role.DOCTOR));
+        assertEq(
+            uint(ehr.getAddressRole(doctor)),
+            uint(EHRManagement.Role.DOCTOR)
+        );
     }
 
     function testOnlyValidRoleCanUploadReport() public {
@@ -185,5 +194,15 @@ contract EHRManagementTest is Test {
         string memory filehash = ehr.retrieveFile(doctor, 0);
         assertEq(filehash, "QmTestHash");
         vm.stopPrank();
+    }
+
+    function testGetFileFee() public {
+        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
+        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
+        vm.prank(doctor);
+        ehr.uploadReport("QmTestHash", 50);
+        vm.prank(patient);
+        uint256 file_fee = ehr.getFileFee(doctor, 0);
+        assertEq(file_fee , 50e18);
     }
 }
