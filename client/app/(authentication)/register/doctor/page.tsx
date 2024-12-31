@@ -5,7 +5,8 @@ import Doctor from "@/public/doctor-svg.svg";
 import { connectWallet, getContractWithAlchemy } from "@/utils/wallet";
 import { Contract } from "ethers";
 import { useRouter } from "next/navigation";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
+import { handleSolidityError } from "@/utils/handleSolidityError";
 
 function DoctorRegisterPage() {
     const [account, setAccount] = useState<string | null>(null);
@@ -19,11 +20,7 @@ function DoctorRegisterPage() {
             try {
                 const alchemyContract = getContractWithAlchemy();
                 setContractWithAlchemyProvider(alchemyContract);
-
                 if (!alchemyContract) return;
-
-                console.log("AlchemyProvider: ", alchemyContract);
-
                 const handleRoleAssigned = (user: string, role: number) => {
                     const roleName = role === 2 ? "Doctor" : "None";
                     toast.success("User Registered");
@@ -36,7 +33,6 @@ function DoctorRegisterPage() {
 
                 alchemyContract.on("RoleAssigned", handleRoleAssigned);
 
-                // Cleanup event listener when component unmounts
                 return () => {
                     alchemyContract.removeListener("RoleAssigned", handleRoleAssigned);
                 };
@@ -56,53 +52,29 @@ function DoctorRegisterPage() {
             setAccount(selectedAccount);
             setContractWithSigner(contractWithSignerInstance);
         } catch (error) {
-            handleError(error);
+            alert("Wallet Connection Error");
+            console.error(error)
         }
     };
 
     // Register the user as a Doctor
     const handleRegister = async () => {
+        if (!contractWithSigner) throw new Error("Connect Wallet First");
         try {
             console.log("Registering as Doctor...");
-
-            if (!contractWithSigner) throw new Error("Connect Wallet First");
-
             const tx = await contractWithSigner.assignRole(account, 2);
             const receipt = await tx.wait();
             console.log("Transaction Receipt: ", receipt);
         } catch (error) {
-            handleError(error);
+            handleSolidityError(contractWithSigner, error);
         }
     };
 
-    // Handle errors and provide better feedback
-    const handleError = (error:unknown) => {
-        if (error instanceof Error) {
 
-            console.error(error);
-
-            if (error.data && contractWithSigner) {
-                try {
-                    const { args, name } = contractWithSigner.interface.parseError(error.data);
-                    console.log(`Error Name: ${name}`);
-                    console.log(`User: ${args[0]}`);
-                    console.log(`Role: ${args[1]}`);
-
-                    alert(`Error: ${name}\nUser: ${args[0]}\nRole: ${args[1]}`);
-                } catch (parseError) {
-                    console.error("Error parsing revert data:", parseError);
-                }
-            }
-
-            alert(error.message);
-        } else {
-            console.error(error);
-        }
-    };
 
     return (
         <div className="min-h-screen flex items-center bg-gray-50 justify-center">
-            
+
             <div className="bg-white p-8 max-w-2xl w-full rounded-md shadow-md">
                 <div className="w-full flex justify-center">
                     <Image
