@@ -74,7 +74,6 @@ function DoctorRegisterPage() {
 
     return (
         <div className="min-h-screen flex items-center bg-gray-50 justify-center">
-
             <div className="bg-white p-8 max-w-2xl w-full rounded-md shadow-md">
                 <div className="w-full flex justify-center">
                     <Image

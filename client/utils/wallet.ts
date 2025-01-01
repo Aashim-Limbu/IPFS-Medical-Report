@@ -36,3 +36,15 @@ export function getContractWithAlchemy() {
     wsProvider
   );
 }
+export function getRole(index:number){
+    switch(index){
+        case 0:
+        return "None";
+        case 1:
+        return "Patient";
+        case 2:
+        return "Doctor";
+        default:
+        return "Unknown";
+    }
+}
