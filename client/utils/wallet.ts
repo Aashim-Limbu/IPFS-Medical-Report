@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import { BrowserProvider, WebSocketProvider } from "ethers";
+import { BrowserProvider } from "ethers";
 import contractAbi from "@/../contract/out/EHRManagement.sol/EHRManagement.json";
 export async function connectWallet() {
   if (!window.ethereum) {
@@ -9,14 +9,14 @@ export async function connectWallet() {
   const accounts = await newProvider.send("eth_requestAccounts", []);
   const signer = await newProvider.getSigner();
   const selectedAccount = accounts[0];
-  console.log(selectedAccount);
+  console.log("Selected Account : ", selectedAccount);
   const contractWithSignerInstance = new Contract(
-    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
+    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     contractAbi.abi,
     signer
   );
   const contractWithProviderInstance = new Contract(
-    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
+    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     contractAbi.abi,
     newProvider
   );
@@ -25,26 +25,4 @@ export async function connectWallet() {
     contractWithProviderInstance,
     selectedAccount,
   };
-}
-export function getContractWithAlchemy() {
-  const wsProvider = new WebSocketProvider(
-    "wss://eth-sepolia.g.alchemy.com/v2/F7KhIiU4v6TN9T7j1O7FhAqk7QMcdMPW"
-  );
-  return new Contract(
-    "0x995Ae432A3d8c0581C40ae2fAFbF167a5fe7d2Ce",
-    contractAbi.abi,
-    wsProvider
-  );
-}
-export function getRole(index:number){
-    switch(index){
-        case 0:
-        return "None";
-        case 1:
-        return "Patient";
-        case 2:
-        return "Doctor";
-        default:
-        return "Unknown";
-    }
 }

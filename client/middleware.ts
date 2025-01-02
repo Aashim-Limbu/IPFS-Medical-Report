@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { publicRoutes, authRoutes, DEFAULT_LOGIN_REDIRECT } from "./routes";
+import {
+  publicRoutes,
+  authRoutes,
+  Authorized_REDIRECT,
+} from "./routes";
 export function middleware(req: NextRequest) {
   const isLoggedIn = req.cookies.get("userAccount");
   const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(req.nextUrl.pathname);
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, req.url));
+      return NextResponse.redirect(new URL(Authorized_REDIRECT, req.url));
     }
     if (req.nextUrl.pathname == "/register") {
       return NextResponse.redirect(new URL("/register/patient", req.url));

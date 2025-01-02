@@ -2,11 +2,13 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image';
 import Patient from '@/public/patient-svg.svg';
-import { connectWallet, getContractWithAlchemy, getRole } from "@/utils/wallet";
 import { Contract } from 'ethers';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleSolidityError } from '@/utils/handleSolidityError';
+import Link from 'next/link';
+import { getContractWithAlchemy, getRole } from '@/utils/contract.utils';
+import { connectWallet } from '@/utils/wallet';
 
 function RegisterPatientPage() {
     const [account, setAccount] = useState<string | null>(null);
@@ -77,7 +79,7 @@ function RegisterPatientPage() {
                 </div>
 
                 <p className="text-center text-slate-700 p-4 font-semibold text-xl">
-                    Register As a Patient
+                    Register As Patient
                 </p>
 
                 <div className="flex flex-col space-y-2">
@@ -92,8 +94,11 @@ function RegisterPatientPage() {
                         onClick={handleRegister}
                         className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500"
                     >
-                        Register Now
+                        Register as Patient
                     </button>
+                </div>
+                <div className='border-t-2 border-stone-400 mt-4 pt-2 underline font-semibold text-center'>
+                    <Link href='doctor' className='text-blue-600 cursor-pointer'>Register as Doctor</Link>
                 </div>
             </div>
         </div>

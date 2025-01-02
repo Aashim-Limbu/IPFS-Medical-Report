@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Doctor from "@/public/doctor-svg.svg";
-import { connectWallet, getContractWithAlchemy } from "@/utils/wallet";
+import { connectWallet } from "@/utils/wallet";
 import { Contract } from "ethers";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { handleSolidityError } from "@/utils/handleSolidityError";
+import { getContractWithAlchemy } from "@/utils/contract.utils";
 
 function DoctorRegisterPage() {
     const [account, setAccount] = useState<string | null>(null);

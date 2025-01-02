@@ -23,7 +23,6 @@ function ViewPage() {
             if (!contract) return console.log("Contract Initailization Error. Please Connect with your Metamask first.")
             const feedAddress = await contract.getFeed();
             setFeed(feedAddress);
-            console.log(feedAddress)
         } catch (error) {
             if (error instanceof Error) {
                 console.log(error.message)

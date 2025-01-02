@@ -1,6 +1,7 @@
 import { Contract } from "ethers";
 import { redirect } from "next/navigation";
 import { toast } from "sonner";
+import { getRole } from "./contract.utils";
 
 type SolidityError = { data: string } & Error;
 
@@ -10,10 +11,12 @@ export async function handleSolidityError(contract: Contract, error: unknown) {
 
     if (solidityError.data && contract) {
       const { args, name } = contract.interface.parseError(solidityError.data);
-      alert(
-        `${name}\n\nError Details:\n- User: ${args[0]}\n- Role: ${args[1]}`
-      );
       if (name === "EHRManagement__RoleAlreadyAssigned") {
+        alert(
+          `${name}\n\nError Details:\n- User: ${args[0]}\n- Role: ${getRole(
+            Number(args[1])
+          )}`
+        );
         toast.info("Redirecting...");
         return redirect("/login");
       }
