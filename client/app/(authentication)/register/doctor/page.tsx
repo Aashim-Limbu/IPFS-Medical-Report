@@ -7,7 +7,7 @@ import { Contract } from "ethers";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { handleSolidityError } from "@/utils/handleSolidityError";
-import { getContractWithAlchemy } from "@/utils/contract.utils";
+import { getContractWithAlchemy, getRole } from "@/utils/contract.utils";
 
 function DoctorRegisterPage() {
     const [account, setAccount] = useState<string | null>(null);
@@ -23,7 +23,8 @@ function DoctorRegisterPage() {
                 setContractWithAlchemyProvider(alchemyContract);
                 if (!alchemyContract) return;
                 const handleRoleAssigned = (user: string, role: number) => {
-                    const roleName = role === 2 ? "Doctor" : "None";
+                    const roleName = getRole(Number(role));
+                    console.log(role, typeof role);
                     toast.success("User Registered");
                     toast.message("Registration", {
                         description: `Address: ${user}, Role: ${roleName}`,

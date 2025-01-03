@@ -76,9 +76,9 @@ contract EHRManagementTest is Test {
 
         vm.startPrank(doctor);
         ehr.uploadReport("ValidHash", 10);
-        (string memory fileHash, uint256 fee) = ehr.getMyFile(0);
-        assertEq(fileHash, "ValidHash");
-        assertEq(fee, 10 * 1e18);
+        EHRManagement.File memory file = ehr.getMyFile(0);
+        assertEq(file.fileHash, "ValidHash");
+        assertEq(file.fee, 10 * 1e18);
         vm.stopPrank();
     }
 
@@ -87,7 +87,9 @@ contract EHRManagementTest is Test {
 
         vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 5);
-        (string memory fileHash, uint256 fee) = ehr.getMyFile(0);
+        EHRManagement.File memory file = ehr.getMyFile(0);
+        string memory fileHash = file.fileHash;
+        uint256 fee = file.fee;
         vm.stopPrank();
 
         assertEq(fileHash, "QmTestHash");
@@ -203,6 +205,39 @@ contract EHRManagementTest is Test {
         ehr.uploadReport("QmTestHash", 50);
         vm.prank(patient);
         uint256 file_fee = ehr.getFileFee(doctor, 0);
-        assertEq(file_fee , 50e18);
+        assertEq(file_fee, 50e18);
+    }
+
+    function testGetUserAllFile() public {
+        address alice = makeAddr("ALICE");
+        vm.deal(alice, 10 ether);
+        ehr.assignRole(alice, EHRManagement.Role.PATIENT);
+        vm.startPrank(alice);
+        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash2", 100);
+        ehr.uploadReport("QmTestHash3", 150);
+        EHRManagement.File[] memory files = ehr.getAllUserFile();
+        vm.stopPrank();
+        assertEq(files.length, 3);
+    }
+
+    function testGetMyFile() public {
+        address alon = makeAddr("ALON");
+        vm.deal(alon, 10 ether);
+        ehr.assignRole(alon, EHRManagement.Role.PATIENT);
+        vm.startPrank(alon);
+        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash1", 100);
+        EHRManagement.File memory file0 = ehr.getMyFile(0);
+        string memory fHash = file0.fileHash;
+        uint256 fee = file0.fee;
+        EHRManagement.File memory file1 = ehr.getMyFile(1);
+        string memory fHash1 = file1.fileHash;
+        uint256 fee1 = file1.fee;
+        assertEq(fHash, "QmTestHash");
+        assertEq(fee, 50e18);
+        assertEq(fHash1, "QmTestHash1");
+        assertEq(fee1, 100e18);
+        vm.stopPrank();
     }
 }

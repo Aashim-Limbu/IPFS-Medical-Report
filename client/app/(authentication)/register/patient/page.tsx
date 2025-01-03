@@ -22,7 +22,7 @@ function RegisterPatientPage() {
                 setContractWithAlchemyProvider(alchemyContract);
                 if (!alchemyContract) return;
                 const handleRoleAssigned = (user: string, role: number) => {
-                    const roleName = getRole(role);
+                    const roleName = getRole(Number(role));
                     toast.success("User Registered");
                     toast.message("Registration", {
                         description: `Address: ${user}, Role: ${roleName}`,

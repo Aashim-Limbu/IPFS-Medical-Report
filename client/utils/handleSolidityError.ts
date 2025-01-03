@@ -20,6 +20,9 @@ export async function handleSolidityError(contract: Contract, error: unknown) {
         toast.info("Redirecting...");
         return redirect("/login");
       }
+    alert(
+      `${name}\n\nError Details:\n${args.map((arg, index) => `- Arg${index + 1}: ${arg}`).join("\n")}`
+    );
       window.location.reload();
     } else {
       alert(

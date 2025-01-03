@@ -27,6 +27,7 @@ contract EHRManagement {
     // Mappings
     mapping(address => Role) private s_roles;
     mapping(address => File[]) private s_addressToFiles; // Now an array of files for each address
+    //uploader -> fileID -> grantee -> FileAccess
     mapping(address => mapping(uint256 => mapping(address => FileAccess)))
         private s_access;
 
@@ -197,9 +198,9 @@ contract EHRManagement {
 
     function getMyFile(
         uint256 fileCounter
-    ) external view returns (string memory fHash, uint256 fee) {
+    ) external view returns (File memory) {
         File memory file = s_addressToFiles[msg.sender][fileCounter];
-        return (file.fileHash, file.fee);
+        return file;
     }
 
     function getAccessToFile(
@@ -212,6 +213,10 @@ contract EHRManagement {
 
     function getFeed() external view returns (AggregatorV3Interface) {
         return s_priceFeed;
+    }
+
+    function getAllUserFile() external view returns (File[] memory) {
+        return s_addressToFiles[msg.sender];
     }
 
     function getFileFee(

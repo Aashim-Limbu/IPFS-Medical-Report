@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { pinata } from "@/utils/pinataUtils";
 import { useWallet } from "@/app/_context/WalletContext";
 import { getContractWithAlchemy } from "@/utils/contract.utils";
+import { toast } from "sonner";
 type STATE_TYPE = {
     file: File | null;
     fee: number;
@@ -16,14 +17,26 @@ const INITIAL_STATE: STATE_TYPE = {
 function UploadPage() {
     const { signer, contractWithSigner } = useWallet();
     useEffect(() => {
-        function listener (){
-            const alchemyContract = getContractWithAlchemy();
-            function handleUpload (uploader:string,fileId:number,fileHash:string,fee:number){
-                
+        function listener() {
+            try {
+                const alchemyContract = getContractWithAlchemy();
+                if (!alchemyContract) throw new Error("Contract not initialized");
+                function handleUpload(uploader: string, fileId: number, fileHash: string, fee: number) {
+                    toast.success("File Upload Success");
+                    alert(`File Uploaded: ${fileId} by ${uploader} with hash: ${fileHash} and fee: ${fee}`);
+                }
+                alchemyContract.on("FileUploaded", handleUpload);
+                return () => {
+                    alchemyContract.removeListener("FileUploaded", handleUpload);
+                };
+            } catch (error) {
+                if (error instanceof Error) {
+
+                }
             }
         }
         listener();
-    }, [input])
+    }, [])
     const [data, setData] = useState(INITIAL_STATE);
     console.log(data.file);
     const { isFirstIndex, isLastIndex, next, back, step } = useMultistepForm([
@@ -40,6 +53,7 @@ function UploadPage() {
         try {
             console.log("submitting");
             if (!contractWithSigner) throw new Error("Contract not initialized");
+            if (!data.file) throw new Error("No file selected");
             const keyRequest = await fetch("/api/key");
             const keyData = await keyRequest.json();
             const upload = await pinata.upload
