@@ -37,7 +37,7 @@ contract EHRManagement {
     // Events
     event RoleAssigned(address indexed user, Role role);
     event FileUploaded(
-        address indexed doctor,
+        address indexed uploader,
         uint256 indexed fileId,
         string fileHash,
         uint256 fee
@@ -61,7 +61,7 @@ contract EHRManagement {
 
     // Custom errors
     error EHRManagement__PermissionDenied(address user);
-    error EHRManagement__FileNotFound();
+    error EHRManagement__FileNotFound(uint256 fileId, address owner);
     error EHRManagement__RoleAlreadyAssigned(address user, Role role);
     error EHRManagement__InsufficientPayment(
         uint256 required,
@@ -119,7 +119,7 @@ contract EHRManagement {
     // Grant access to a file
     function grantAccess(address _grantee, uint256 _fileId) external validRole {
         if (_fileId >= s_addressToFiles[msg.sender].length) {
-            revert EHRManagement__FileNotFound();
+            revert EHRManagement__FileNotFound(_fileId, msg.sender);
         }
         s_access[msg.sender][_fileId][_grantee] = FileAccess({
             authorized: true,
@@ -145,10 +145,7 @@ contract EHRManagement {
         address _doctor,
         uint256 _fileId
     ) external payable onlyPatient {
-        File memory file = s_addressToFiles[_doctor][_fileId];
-        if (bytes(file.fileHash).length == 0) {
-            revert EHRManagement__FileNotFound();
-        }
+        File memory file = validateFileExists(_doctor, _fileId);
         uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
         //paying in ETHEREUM
         if (equivalentUSD < file.fee) {
@@ -170,10 +167,7 @@ contract EHRManagement {
         address _owner,
         uint256 _fileId
     ) external view validRole returns (string memory) {
-        if (_fileId >= s_addressToFiles[_owner].length) {
-            revert EHRManagement__FileNotFound();
-        }
-
+        File memory file = validateFileExists(_owner, _fileId);
         FileAccess memory access = s_access[_owner][_fileId][msg.sender];
         if (
             !access.authorized &&
@@ -181,7 +175,20 @@ contract EHRManagement {
         ) {
             revert EHRManagement__PermissionDenied(msg.sender);
         }
-        return s_addressToFiles[_owner][_fileId].fileHash;
+        return file.fileHash;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            HELPER FUNCTION
+    //////////////////////////////////////////////////////////////*/
+    function validateFileExists(
+        address owner,
+        uint256 fileId
+    ) internal view returns (File memory) {
+        if (fileId >= s_addressToFiles[owner].length) {
+            revert EHRManagement__FileNotFound(fileId, owner);
+        }
+        return s_addressToFiles[owner][fileId];
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -197,10 +204,10 @@ contract EHRManagement {
     }
 
     function getMyFile(
-        uint256 fileCounter
-    ) external view returns (File memory) {
-        File memory file = s_addressToFiles[msg.sender][fileCounter];
-        return file;
+        uint256 fileId
+    ) external view returns (string memory, uint256 fee) {
+        File memory myFile = validateFileExists(msg.sender, fileId);
+        return (myFile.fileHash, myFile.fee);
     }
 
     function getAccessToFile(
@@ -223,9 +230,7 @@ contract EHRManagement {
         address _owner,
         uint256 _fileId
     ) external view returns (uint256) {
-        if (_fileId >= s_addressToFiles[_owner].length) {
-            revert EHRManagement__FileNotFound();
-        }
-        return s_addressToFiles[_owner][_fileId].fee;
+        File memory myFile = validateFileExists(_owner, _fileId);
+        return myFile.fee;
     }
 }

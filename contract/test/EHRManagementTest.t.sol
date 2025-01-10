@@ -76,9 +76,9 @@ contract EHRManagementTest is Test {
 
         vm.startPrank(doctor);
         ehr.uploadReport("ValidHash", 10);
-        EHRManagement.File memory file = ehr.getMyFile(0);
-        assertEq(file.fileHash, "ValidHash");
-        assertEq(file.fee, 10 * 1e18);
+        (string memory fileHash,uint256 fee) = ehr.getMyFile(0);
+        assertEq(fileHash, "ValidHash");
+        assertEq(fee, 10 * 1e18);
         vm.stopPrank();
     }
 
@@ -87,9 +87,7 @@ contract EHRManagementTest is Test {
 
         vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", 5);
-        EHRManagement.File memory file = ehr.getMyFile(0);
-        string memory fileHash = file.fileHash;
-        uint256 fee = file.fee;
+        (string memory fileHash,uint256 fee) = ehr.getMyFile(0);
         vm.stopPrank();
 
         assertEq(fileHash, "QmTestHash");
@@ -228,12 +226,12 @@ contract EHRManagementTest is Test {
         vm.startPrank(alon);
         ehr.uploadReport("QmTestHash", 50);
         ehr.uploadReport("QmTestHash1", 100);
-        EHRManagement.File memory file0 = ehr.getMyFile(0);
-        string memory fHash = file0.fileHash;
-        uint256 fee = file0.fee;
-        EHRManagement.File memory file1 = ehr.getMyFile(1);
-        string memory fHash1 = file1.fileHash;
-        uint256 fee1 = file1.fee;
+        (string memory fHash ,  uint256 fee) = ehr.getMyFile(0);
+        // string memory fHash = file0.fileHash;
+        // uint256 fee = file0.fee;
+        (string memory fHash1 ,  uint256 fee1) = ehr.getMyFile(1);
+        // string memory fHash1 = file1.fileHash;
+        // uint256 fee1 = file1.fee;
         assertEq(fHash, "QmTestHash");
         assertEq(fee, 50e18);
         assertEq(fHash1, "QmTestHash1");
