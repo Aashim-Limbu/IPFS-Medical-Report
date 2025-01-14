@@ -17,7 +17,7 @@ function DoctorRegisterPage() {
 
     // Set up the contract and event listener for RoleAssigned event
     useEffect(() => {
-        const initializeContract = async () => {
+        const initializeContract = () => {
             try {
                 const alchemyContract = getContractWithAlchemy();
                 setContractWithAlchemyProvider(alchemyContract);
@@ -43,7 +43,7 @@ function DoctorRegisterPage() {
             }
         };
 
-        initializeContract();
+        return initializeContract();
     }, [router]);
 
     // Handle wallet connection

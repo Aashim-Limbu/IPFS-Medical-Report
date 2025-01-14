@@ -6,6 +6,7 @@ import { pinata } from "@/utils/pinataUtils";
 import { FormEvent, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 type STATE_TYPE = {
     file: File | null;
     fee: number;
@@ -15,28 +16,35 @@ const INITIAL_STATE: STATE_TYPE = {
     fee: 0,
 };
 function UploadPage() {
-    const { signer, contractWithSigner } = useWallet();
+    const { contractWithSigner } = useWallet();
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
     useEffect(() => {
         function listener() {
             try {
                 const alchemyContract = getContractWithAlchemy();
                 if (!alchemyContract) throw new Error("Contract not initialized");
+
                 function handleUpload(uploader: string, fileId: number, fileHash: string, fee: number) {
+                    setIsLoading(false);
                     toast.success("File Upload Success");
                     alert(`File Uploaded: ${fileId} by ${uploader} with hash: ${fileHash} and fee: ${fee}`);
+                    router.push("/home");
                 }
+
                 alchemyContract.on("FileUploaded", handleUpload);
+
                 return () => {
                     alchemyContract.removeListener("FileUploaded", handleUpload);
                 };
             } catch (error) {
-                if (error instanceof Error) {
-
-                }
+                console.error("Error during contract setup:", error);
             }
         }
-        listener();
-    }, [])
+
+        return listener();
+    }, [router]);
+
     const [data, setData] = useState(INITIAL_STATE);
     console.log(data.file);
     const { isFirstIndex, isLastIndex, next, back, step } = useMultistepForm([
@@ -51,7 +59,7 @@ function UploadPage() {
         console.log("Contract with Signer: ", contractWithSigner)
         if (!isLastIndex) return next();
         try {
-            console.log("submitting");
+            setIsLoading(true);
             if (!contractWithSigner) throw new Error("Contract not initialized");
             if (!data.file) throw new Error("No file selected");
             const keyRequest = await fetch("/api/key");
@@ -90,7 +98,7 @@ function UploadPage() {
                         type="submit"
                         className="border-2 border-primary p-1 px-4 font-semibold rounded-md text-indigo-600 hover:text-primary"
                     >
-                        {isLastIndex ? "Submit" : "Next"}
+                        {isLastIndex ? (isLoading ? "Submitting" : "Submit") : "Next"}
                     </button>
                 </div>
             </form>
