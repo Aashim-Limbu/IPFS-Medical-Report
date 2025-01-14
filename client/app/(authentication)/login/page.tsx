@@ -1,48 +1,48 @@
 "use client";
-import React, { MouseEvent } from "react";
+import React, { MouseEvent, useState } from "react";
 import Image from "next/image";
 
 import Link from "next/link";
 import Logo from "@/public/metamask-icon.svg";
 import { useWallet } from "../../_context/WalletContext";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { Wallet } from "lucide-react";
 function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { connectWallet } = useWallet();
   async function handleConnect(e: MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    await connectWallet();
-    router.push("/home");
+    setIsLoading(true);
+    try {
+      const loadingToast = toast.loading("Connecting wallet...");
+      await connectWallet();
+      toast.dismiss(loadingToast);
+      toast.success("Wallet connected successfully!");
+      router.push("/home");
+    } catch (error) {
+      // Error handling
+      let errorMessage = "Failed to connect wallet";
+
+      if (error instanceof Error) {
+        // Handle specific error types
+        if (error.message.includes("MetaMask not installed")) {
+          errorMessage = "Please install MetaMask to continue";
+        } else if (error.message.includes("User rejected")) {
+          errorMessage = "Connection rejected. Please try again";
+        } else if (error.message.includes("Network error")) {
+          errorMessage = "Network error. Please check your connection";
+        }
+      }
+
+      toast.error(errorMessage);
+      console.error("Connection error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }
   return (
-    // <div className="w-full min-h-screen bg-gray-200 flex flex-col items-center justify-center">
-    //     <div className="bg-white/40 p-8 max-w-2xl w-full backdrop-blur-sm rounded-md shadow-md">
-    //         <div className="w-full flex justify-center ">
-    //             <Image src={Logo} alt="Logo" className="w-16 ring-4 ring-indigo-600 rounded-md p-1 " width={0} height={0} />
-    //         </div>
-    //         <p className="text-center p-4 capitalize font-semibold text-xl tracking-wider">
-    //             Login with Metamask
-    //         </p>
-    //         <div className="flex flex-col space-y-2">
-    //             <button
-    //                 onClick={handleConnect}
-    //                 className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-700"
-    //             >
-    //                 Connect
-    //             </button>
-    //             <div className="relative p-8">
-    //                 <span className="z-10 text-gray-800 font-semibold text-sm absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 bg-white/40 backdrop-blur-md ring-1 ring-black/5 rounded-full p-2">
-    //                     Not a Member yet ?
-    //                 </span>
-    //                 <div className="w-full h-0.5 bg-gray-500/80 rounded-full "></div>
-    //             </div>
-
-    //             <div className="inline-flex justify-center items-center text-indigo-600 tracking-tight font-semibold">
-    //                 <Link href="/register">Register now</Link>
-    //             </div>
-    //         </div>
-    //     </div>
-    // </div>a
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-100 flex items-center justify-center p-4">
       <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl w-full max-w-md p-8 ">
         <div className="flex flex-col items-center space-y-6">
@@ -56,8 +56,6 @@ function LoginPage() {
                 width={0}
                 height={0}
               />
-
-              {/* <Logo size={80} className="text-indigo-600" /> */}
             </div>
           </div>
 
@@ -71,9 +69,18 @@ function LoginPage() {
 
           <button
             onClick={handleConnect}
-            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-200 hover:-translate-y-0.5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            disabled={isLoading}
+            className={`w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 
+              ${
+                isLoading
+                  ? "opacity-75 cursor-not-allowed"
+                  : "hover:shadow-xl hover:-translate-y-0.5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              }`}
           >
-            Connect Wallet
+            <span className="flex items-center justify-center space-x-2">
+              <Wallet size={20} className={isLoading ? "animate-pulse" : ""} />
+              <span>{isLoading ? "Connecting..." : "Connect Wallet"}</span>
+            </span>
           </button>
 
           <div className="relative w-full py-5">
