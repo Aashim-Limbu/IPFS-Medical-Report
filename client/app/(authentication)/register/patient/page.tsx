@@ -16,7 +16,7 @@ function RegisterPatientPage() {
     const [contractWithAlchemyProvider, setContractWithAlchemyProvider] = useState<Contract | null>(null);
     const router = useRouter();
     useEffect(() => {
-        const initializeContract = async () => {
+         function initializeContract() {
             try {
                 const alchemyContract = getContractWithAlchemy();
                 setContractWithAlchemyProvider(alchemyContract);
@@ -40,8 +40,7 @@ function RegisterPatientPage() {
                 console.error("Error initializing contract with Alchemy: ", error);
             }
         };
-
-        initializeContract();
+        return initializeContract();
     }, [router]);
     const handleConnect = async () => {
         try {

@@ -67,12 +67,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
 
     async function handleDisconnect() {
-        cookies.remove("userAccount");
         setAccount(null);
         setProvider(null);
         setSigner(null);
         setContractWithSigner(null);
         setContractWithProvider(null);
+        cookies.remove("userAccount");
     }
 
     return (
