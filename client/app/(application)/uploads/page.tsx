@@ -1,10 +1,10 @@
 "use client";
+import { useWallet } from "@/app/_context/WalletContext";
 import useMultistepForm from "@/app/hooks/useMultistepForm";
+import { getContractWithAlchemy } from "@/utils/contract.utils";
+import { pinata } from "@/utils/pinataUtils";
 import { FormEvent, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { pinata } from "@/utils/pinataUtils";
-import { useWallet } from "@/app/_context/WalletContext";
-import { getContractWithAlchemy } from "@/utils/contract.utils";
 import { toast } from "sonner";
 type STATE_TYPE = {
     file: File | null;
@@ -126,7 +126,7 @@ function First({
                         : `Drag 'n' drop some files here, or click to select files`}
                 </p>
                 <div className="mt-4">
-                    <button className="bg-gray-500 rounded-md px-2 p-1 text-white border-1 border-gray-600">
+                    <button type="button" className="bg-gray-500 rounded-md px-2 p-1 text-white border-1 border-gray-600">
                         Open File Dialog
                     </button>
                 </div>
