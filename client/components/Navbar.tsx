@@ -38,7 +38,7 @@ const Navbar = () => {
                       <Link href={"/login"}>SignIn</Link>
                     </Button>
                     <Button variant={"default"}>
-                      <Link href={"/"}>Register</Link>
+                      <Link href={"/register"}>Register</Link>
                     </Button>
                   </div>
                 </div>
@@ -59,9 +59,12 @@ const Navbar = () => {
                     <Link href={item.link}>{item.name}</Link>
                   </p>
                 ))}
-                <div>
-                  <Button variant={"default"}>
+                <div className="flex md:hidden gap-1 ">
+                  <Button variant={"secondary"}>
                     <Link href={"/login"}>SignIn</Link>
+                  </Button>
+                  <Button variant={"default"}>
+                    <Link href={"/register"}>Register</Link>
                   </Button>
                 </div>
               </div>
