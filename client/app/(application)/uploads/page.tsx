@@ -9,10 +9,12 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 type STATE_TYPE = {
     file: File | null;
+    name: string | null;
     fee: number;
 };
 const INITIAL_STATE: STATE_TYPE = {
     file: null,
+    name: null,
     fee: 0,
 };
 function UploadPage() {
@@ -46,7 +48,7 @@ function UploadPage() {
     }, [router]);
 
     const [data, setData] = useState(INITIAL_STATE);
-    console.log(data.file);
+    console.log("Data.FILE ", data.file);
     const { isFirstIndex, isLastIndex, next, back, step } = useMultistepForm([
         <First key="first" {...data} updateFields={updateFields} />,
         <Second key="second" {...data} updateFields={updateFields} />,
@@ -67,11 +69,12 @@ function UploadPage() {
             const upload = await pinata.upload
                 .file(data.file as File)
                 .key(keyData.JWT);
-            const tx = await contractWithSigner.uploadReport(upload.IpfsHash, data.fee);
+            const tx = await contractWithSigner.uploadReport(upload.IpfsHash, data.file.name, data.fee);
             const recipt = await tx.wait();
             console.log("recipt: ", recipt);
             console.log("IPFS HASH: ", upload.IpfsHash);
         } catch (error) {
+            alert("Error: ", error);
             console.error("Error uploading to Pinata:", error);
         }
     }

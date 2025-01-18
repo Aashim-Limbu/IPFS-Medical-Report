@@ -1,9 +1,13 @@
 "use client"
 import { useWallet } from '@/app/_context/WalletContext'
 import React, { useEffect, useState } from 'react'
+import { GoFileDirectory } from "react-icons/go";
 import { formatEther } from 'ethers';
+import FileUpload from '../../_components/fileUploadComponent';
+import Link from 'next/link';
 type FILE = {
     ipfsHash: string,
+    name: string,
     fee: string
 }
 const people = [
@@ -25,15 +29,16 @@ function CheckPage() {
         async function getMyFile() {
             if (!contractWithSigner) return await connectWallet();
             const files = await contractWithSigner.getAllUserFile() as [];
-            const parsedData = files.map(item => ({ ipfsHash: item[0], fee: formatEther(item[1]) })) as FILE[];
+            const parsedData = files.map(item => ({ ipfsHash: item[0], name: item[1], fee: formatEther(item[2]) })) as FILE[];
+            console.log(parsedData);
             setMyFile(parsedData);
         }
         getMyFile()
-    }, [contractWithSigner,connectWallet])
+    }, [contractWithSigner, connectWallet])
     return (
         <>
             {
-                myFile?.map((file, index) => (<div key={index}>{file.ipfsHash} {file.fee}</div>))
+                myFile?.map((file, index) => (<div key={index}>{file.ipfsHash} {file.name} {file.fee}</div>))
             }
             <div className="px-4 sm:px-6 lg:px-8 py-4">
                 <div className="sm:flex sm:items-center">
@@ -54,7 +59,10 @@ function CheckPage() {
                                             Name
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Status
+                                            Details
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Fee
                                         </th>
                                         <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                                             <span className="sr-only">Edit</span>
@@ -62,28 +70,31 @@ function CheckPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {people.map((person) => (
-                                        <tr key={person.email}>
+                                    {myFile && myFile.map((file, index) => (
+                                        <tr key={index}>
                                             <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
                                                 <div className="flex items-center">
-                                                    <div className="h-11 w-11 flex-shrink-0">
-                                                        <img alt="" src={person.image} className="h-11 w-11 rounded-full" />
+                                                    <div className='text-3xl font-bold p-2 rounded-full bg-gray-500/30  border-2'>
+                                                        <GoFileDirectory />
                                                     </div>
                                                     <div className="ml-4">
-                                                        <div className="font-medium text-gray-900">{person.name}</div>
-                                                        <div className="mt-1 text-gray-500">{person.email}</div>
+                                                        <div className="font-medium text-gray-900">{file.name}</div>
+                                                        {/* <div className="mt-1 text-gray-500">{person.email}</div> */}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                                                <div className="text-gray-900">{person.title}</div>
-                                                <div className="mt-1 text-gray-500">{person.department}</div>
+                                                <div className="text-gray-900">{file.ipfsHash}</div>
+                                                {/* <div className="mt-1 text-gray-500">{person.department}</div> */}
                                             </td>
-                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{person.role}</td>
+                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">$ {file.fee}</td>
                                             <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                                <a href="#" className="text-indigo-600 hover:text-indigo-900">
-                                                    Edit<span className="sr-only">, {person.name}</span>
-                                                </a>
+                                                <Link href="#" className="text-indigo-600 hover:text-indigo-900">
+                                                    Approve<span className="sr-only">approve</span>
+                                                </Link>
+                                                {/* <Link href="#" className="text-indigo-600 hover:text-indigo-900">
+                                                    Revoke<span className="sr-only">revoke</span>
+                                                </Link> */}
                                             </td>
                                         </tr>
                                     ))}
