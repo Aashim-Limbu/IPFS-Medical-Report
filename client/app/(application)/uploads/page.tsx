@@ -1,10 +1,10 @@
 "use client";
+import { useWallet } from "@/app/_context/WalletContext";
 import useMultistepForm from "@/app/hooks/useMultistepForm";
+import { getContractWithAlchemy } from "@/utils/contract.utils";
+import { pinata } from "@/utils/pinataUtils";
 import { FormEvent, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { pinata } from "@/utils/pinataUtils";
-import { useWallet } from "@/app/_context/WalletContext";
-import { getContractWithAlchemy } from "@/utils/contract.utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 type STATE_TYPE = {
