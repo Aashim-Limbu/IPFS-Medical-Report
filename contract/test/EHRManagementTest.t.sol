@@ -71,14 +71,15 @@ contract EHRManagementTest is Test {
                 other
             )
         );
-        ehr.uploadReport("InvalidHash", 10);
+        ehr.uploadReport("InvalidHash", "test", 10);
         vm.stopPrank();
 
         vm.startPrank(doctor);
-        ehr.uploadReport("ValidHash", 10);
-        (string memory fileHash,uint256 fee) = ehr.getMyFile(0);
-        assertEq(fileHash, "ValidHash");
-        assertEq(fee, 10 * 1e18);
+        ehr.uploadReport("ValidHash", "test", 10);
+        EHRManagement.File memory myFile = ehr.getMyFile(0);
+        assertEq(myFile.fileHash, "ValidHash");
+        assertEq(myFile.fileId, 0);
+        assertEq(myFile.fee, 10 * 1e18);
         vm.stopPrank();
     }
 
@@ -86,12 +87,11 @@ contract EHRManagementTest is Test {
         ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 5);
-        (string memory fileHash,uint256 fee) = ehr.getMyFile(0);
+        ehr.uploadReport("QmTestHash", "test", 5);
+        EHRManagement.File memory myFile = ehr.getMyFile(0);
         vm.stopPrank();
-
-        assertEq(fileHash, "QmTestHash");
-        assertEq(fee, 5 * 1e18);
+        assertEq(myFile.fileHash, "QmTestHash");
+        assertEq(myFile.fee, 5 * 1e18);
     }
 
     function testGrantAccess() public {
@@ -99,7 +99,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash", "test", 50);
         ehr.grantAccess(patient, 0);
         vm.stopPrank();
 
@@ -115,7 +115,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash", "test", 50);
         ehr.grantAccess(patient, 0);
         vm.stopPrank();
 
@@ -135,7 +135,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 2000);
+        ehr.uploadReport("QmTestHash", "test", 2000);
         ehr.grantAccess(patient, 0);
         vm.stopPrank();
 
@@ -151,7 +151,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", "test", 1 ether);
         ehr.grantAccess(patient, 0);
         ehr.revokeAccess(patient, 0);
         vm.stopPrank();
@@ -166,7 +166,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 1 ether);
+        ehr.uploadReport("QmTestHash", "test", 1 ether);
         vm.stopPrank();
 
         vm.startPrank(other);
@@ -185,7 +185,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
 
         vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash", "test", 50);
         ehr.grantAccess(patient, 0);
         vm.stopPrank();
 
@@ -200,7 +200,7 @@ contract EHRManagementTest is Test {
         ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
         ehr.assignRole(patient, EHRManagement.Role.PATIENT);
         vm.prank(doctor);
-        ehr.uploadReport("QmTestHash", 50);
+        ehr.uploadReport("QmTestHash", "test", 50);
         vm.prank(patient);
         uint256 file_fee = ehr.getFileFee(doctor, 0);
         assertEq(file_fee, 50e18);
@@ -211,10 +211,10 @@ contract EHRManagementTest is Test {
         vm.deal(alice, 10 ether);
         ehr.assignRole(alice, EHRManagement.Role.PATIENT);
         vm.startPrank(alice);
-        ehr.uploadReport("QmTestHash", 50);
-        ehr.uploadReport("QmTestHash2", 100);
-        ehr.uploadReport("QmTestHash3", 150);
-        EHRManagement.File[] memory files = ehr.getAllUserFile();
+        ehr.uploadReport("QmTestHash", "test", 50);
+        ehr.uploadReport("QmTestHash2", "test", 100);
+        ehr.uploadReport("QmTestHash3", "test", 150);
+        EHRManagement.File[] memory files = ehr.getAllMyFile();
         vm.stopPrank();
         assertEq(files.length, 3);
     }
@@ -224,18 +224,18 @@ contract EHRManagementTest is Test {
         vm.deal(alon, 10 ether);
         ehr.assignRole(alon, EHRManagement.Role.PATIENT);
         vm.startPrank(alon);
-        ehr.uploadReport("QmTestHash", 50);
-        ehr.uploadReport("QmTestHash1", 100);
-        (string memory fHash ,  uint256 fee) = ehr.getMyFile(0);
+        ehr.uploadReport("QmTestHash", "test", 50);
+        ehr.uploadReport("QmTestHash1", "test", 100);
+        EHRManagement.File memory myFile1 = ehr.getMyFile(0);
         // string memory fHash = file0.fileHash;
         // uint256 fee = file0.fee;
-        (string memory fHash1 ,  uint256 fee1) = ehr.getMyFile(1);
+        EHRManagement.File memory myFile2 = ehr.getMyFile(1);
         // string memory fHash1 = file1.fileHash;
         // uint256 fee1 = file1.fee;
-        assertEq(fHash, "QmTestHash");
-        assertEq(fee, 50e18);
-        assertEq(fHash1, "QmTestHash1");
-        assertEq(fee1, 100e18);
+        assertEq(myFile1.fileHash, "QmTestHash");
+        assertEq(myFile1.fee, 50e18);
+        assertEq(myFile2.fileHash, "QmTestHash1");
+        assertEq(myFile2.fee, 100e18);
         vm.stopPrank();
     }
 }

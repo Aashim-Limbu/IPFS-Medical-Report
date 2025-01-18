@@ -16,6 +16,8 @@ contract EHRManagement {
 
     struct File {
         string fileHash;
+        string fileName;
+        uint256 fileId;
         uint256 fee;
     }
 
@@ -106,12 +108,18 @@ contract EHRManagement {
     // Upload a medical report
     function uploadReport(
         string memory _ipfsHash,
+        string memory _name,
         uint256 _fee
     ) external validRole {
         uint256 newFileId = s_addressToFiles[msg.sender].length;
         //setting price in USD
         s_addressToFiles[msg.sender].push(
-            File({fileHash: _ipfsHash, fee: _fee * 1e18})
+            File({
+                fileHash: _ipfsHash,
+                fileName: _name,
+                fileId: newFileId,
+                fee: _fee * 1e18
+            })
         );
         emit FileUploaded(msg.sender, newFileId, _ipfsHash, _fee * 1e18);
     }
@@ -156,6 +164,7 @@ contract EHRManagement {
         // Transfer payment to the doctor
         (bool success, ) = _doctor.call{value: msg.value}("");
         if (!success) {
+            s_access[_doctor][_fileId][msg.sender].paid = false;
             revert("Payment transfer to doctor failed");
         }
 
@@ -203,13 +212,6 @@ contract EHRManagement {
         return s_roles[subject];
     }
 
-    function getMyFile(
-        uint256 fileId
-    ) external view returns (string memory, uint256 fee) {
-        File memory myFile = validateFileExists(msg.sender, fileId);
-        return (myFile.fileHash, myFile.fee);
-    }
-
     function getAccessToFile(
         address granter,
         uint256 fileId
@@ -222,7 +224,13 @@ contract EHRManagement {
         return s_priceFeed;
     }
 
-    function getAllUserFile() external view returns (File[] memory) {
+    function getMyFile(
+        uint256 fileId
+    ) external view returns (File memory myFile) {
+        myFile = validateFileExists(msg.sender, fileId);
+    }
+
+    function getAllMyFile() external view returns (File[] memory) {
         return s_addressToFiles[msg.sender];
     }
 

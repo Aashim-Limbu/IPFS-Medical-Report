@@ -18,7 +18,7 @@ clean  :; forge clean
 # Remove modules
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
-install :; forge install Cyfrin/foundry-devops@0.0.11 --no-commit && forge install foundry-rs/forge-std@v1.5.3 --no-commit && forge install openzeppelin/openzeppelin-contracts@v4.8.3 --no-commit
+install :; forge install foundry-rs/forge-std@v1.5.3 --no-commit && forge install openzeppelin/openzeppelin-contracts@v4.8.3 --no-commit && forge install smartcontractkit/chainlink-brownie-contracts --no-commit
 
 # Update Dependencies
 update:; forge update
@@ -37,6 +37,10 @@ NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KE
 
 ifeq ($(findstring --network sepolia,$(ARGS)),--network sepolia)
 	NETWORK_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account defaultKey --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+endif
+
+ifeq ($(findstring zksync-sepolia,$(ARGS)),zksync-sepolia)
+	NETWORK_ARGS := --rpc-url $(ZKSYNC_RPC) --account defaultKey --verifier zksync --verifier-url https://explorer.sepolia.era.zksync.dev/contract_verification--verify --zksync --broadcast -vvvv
 endif
 
 deploy:

@@ -14,6 +14,8 @@ contract HelperConfig is Script {
     constructor() {
         if (block.chainid == 11155111) {
             activeNetConfig = getSepoliaEthConfig();
+        } else if (block.chainid == 300) {
+            activeNetConfig = getZKSyncSepoliaConfig();
         } else {
             activeNetConfig = getAnvilConfig();
         }
@@ -24,6 +26,17 @@ contract HelperConfig is Script {
             priceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306
         }); // ETH -->USD
         return sepoliaConfig;
+    }
+
+    function getZKSyncSepoliaConfig()
+        public
+        pure
+        returns (NetworkConfig memory)
+    {
+        NetworkConfig memory zkConfig = NetworkConfig({
+            priceFeed: 0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF
+        });
+        return zkConfig;
     }
 
     function getAnvilConfig() public returns (NetworkConfig memory) {
