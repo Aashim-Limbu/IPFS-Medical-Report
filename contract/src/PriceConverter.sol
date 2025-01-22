@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity >=0.8.0 <0.9.0;
 import {AggregatorV3Interface} from "@chainlink/contracts/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-import {console} from "forge-std/Test.sol";
 
 //Basically we talk eth in terms of wei.
 library PriceConverter {

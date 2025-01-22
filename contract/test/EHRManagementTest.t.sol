@@ -9,233 +9,184 @@ import {HelperConfig} from "script/HelperConfig.s.sol";
 contract EHRManagementTest is Test {
     EHRManagement ehr;
     HelperConfig helperConfig;
-    address owner;
+
+    uint256 doctorId;
+    uint256 patientId;
+    uint256 otherId;
     address doctor;
     address patient;
     address other;
 
     function setUp() public {
-        // Deploy the contract
         DeployEHRManagement deployer = new DeployEHRManagement();
         (ehr, helperConfig) = deployer.deployContract();
-        owner = address(this);
+
         doctor = makeAddr("DOCTOR");
         patient = makeAddr("PATIENT");
-        other = address(0x3);
+        other = makeAddr("OTHER");
 
-        // Assign initial ether balances
+        // Setup users
+        vm.startPrank(doctor);
+        ehr.registerUser();
+        doctorId = ehr.getUserId();
+        vm.stopPrank();
+
+        vm.startPrank(patient);
+        ehr.registerUser();
+        patientId = ehr.getUserId();
+        vm.stopPrank();
+
+        vm.startPrank(other);
+        ehr.registerUser();
+        otherId = ehr.getUserId();
+        vm.stopPrank();
+
+        // Assign roles
+        vm.prank(doctor);
+        ehr.assignRole(EHRManagement.Role.DOCTOR);
+
+        vm.prank(patient);
+        ehr.assignRole(EHRManagement.Role.PATIENT);
+
+        // Fund accounts
         vm.deal(doctor, 10 ether);
         vm.deal(patient, 10 ether);
         vm.deal(other, 10 ether);
     }
 
-    function testAssignRole() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
+    function testUserRegistration() public {
+        address newUser = makeAddr("NEW_USER");
+        vm.prank(newUser);
+        ehr.registerUser();
+        vm.prank(newUser);
+        uint256 newUserId = ehr.getUserId();
+        assertGt(newUserId, 0);
+    }
 
-        assertEq(
-            uint256(ehr.getAddressRole(doctor)),
-            uint256(EHRManagement.Role.DOCTOR)
-        );
-        assertEq(
-            uint256(ehr.getAddressRole(patient)),
-            uint256(EHRManagement.Role.PATIENT)
-        );
+    function testRoleAssignment() public {
+        vm.prank(doctor);
+        EHRManagement.Role doc = ehr.getUserRole();
+        vm.prank(patient);
+        EHRManagement.Role pat = ehr.getUserRole();
+        assertEq(uint256(doc), uint256(EHRManagement.Role.DOCTOR));
+        assertEq(uint256(pat), uint256(EHRManagement.Role.PATIENT));
     }
 
     function testCannotReassignRole() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                EHRManagement.EHRManagement__RoleAlreadyAssigned.selector,
-                doctor,
-                EHRManagement.Role.DOCTOR
-            )
-        );
-        ehr.assignRole(doctor, EHRManagement.Role.PATIENT);
-
-        assertEq(
-            uint(ehr.getAddressRole(doctor)),
-            uint(EHRManagement.Role.DOCTOR)
-        );
+        vm.prank(doctor);
+        vm.expectRevert(EHRManagement.RoleAlreadyAssigned.selector);
+        ehr.assignRole(EHRManagement.Role.PATIENT);
     }
 
-    function testOnlyValidRoleCanUploadReport() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-
-        vm.startPrank(other);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                EHRManagement.EHRManagement__PermissionDenied.selector,
-                other
-            )
-        );
-        ehr.uploadReport("InvalidHash", "test", 10);
-        vm.stopPrank();
-
-        vm.startPrank(doctor);
-        ehr.uploadReport("ValidHash", "test", 10);
-        EHRManagement.File memory myFile = ehr.getMyFile(0);
-        assertEq(myFile.fileHash, "ValidHash");
-        assertEq(myFile.fileId, 0);
-        assertEq(myFile.fee, 10 * 1e18);
-        vm.stopPrank();
-    }
-
-    function testUploadReport() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-
-        vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", "test", 5);
-        EHRManagement.File memory myFile = ehr.getMyFile(0);
-        vm.stopPrank();
-        assertEq(myFile.fileHash, "QmTestHash");
-        assertEq(myFile.fee, 5 * 1e18);
-    }
-
-    function testGrantAccess() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
-
+    function testFileUpload() public {
         vm.startPrank(doctor);
         ehr.uploadReport("QmTestHash", "test", 50);
-        ehr.grantAccess(patient, 0);
+        EHRManagement.File[] memory files = ehr.getMyFiles();
         vm.stopPrank();
-
-        vm.startPrank(patient);
-        (bool authorized, bool paid) = ehr.getAccessToFile(doctor, 0);
-        assertTrue(authorized);
-        assertFalse(paid);
-        vm.stopPrank();
+        assertEq(files.length, 1);
+        assertEq(files[0].fileHash, "QmTestHash");
     }
 
-    function testPayForAccess() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
-
-        vm.startPrank(doctor);
+    function testAccessControl() public {
+        // Upload file
+        vm.prank(doctor);
         ehr.uploadReport("QmTestHash", "test", 50);
-        ehr.grantAccess(patient, 0);
-        vm.stopPrank();
 
-        vm.startPrank(patient);
-        ehr.payForAccess{value: 0.025 ether}(doctor, 0);
-        vm.stopPrank();
+        // Grant access
+        vm.prank(doctor);
+        ehr.grantAccess(patientId, 0);
 
-        vm.startPrank(patient);
-        (bool authorized, bool paid) = ehr.getAccessToFile(doctor, 0);
-        assertTrue(authorized);
-        assertTrue(paid);
-        vm.stopPrank();
+        // Check access
+        vm.prank(patient);
+        EHRManagement.FileAccess memory access = ehr.getAccessStatus(
+            doctorId,
+            0
+        );
+        assertTrue(access.authorized);
     }
 
-    function testRetrieveFile() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
+    function testPaymentProcessing() public {
+        // Setup file
+        vm.prank(doctor);
+        ehr.uploadReport("QmTestHash", "test", 300);
 
-        vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", "test", 2000);
-        ehr.grantAccess(patient, 0);
-        vm.stopPrank();
+        // Grant access
+        vm.prank(doctor);
+        ehr.grantAccess(patientId, 0);
 
-        vm.startPrank(patient);
-        ehr.payForAccess{value: 1 ether}(doctor, 0);
-        string memory retrievedHash = ehr.retrieveFile(doctor, 0);
-        assertEq(retrievedHash, "QmTestHash");
-        vm.stopPrank();
+        // Make payment
+        vm.prank(patient);
+        ehr.payForAccess{value: 0.11 ether}(doctorId, 0);
+
+        // Verify payment
+        vm.prank(patient);
+        EHRManagement.FileAccess memory access = ehr.getAccessStatus(
+            doctorId,
+            0
+        );
+        assertTrue(access.paid);
     }
 
-    function testRevokeAccess() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
+    function testFileRetrieval() public {
+        // Setup file and access
+        vm.prank(doctor);
+        ehr.uploadReport("QmTestHash", "test", 50);
 
-        vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", "test", 1 ether);
-        ehr.grantAccess(patient, 0);
-        ehr.revokeAccess(patient, 0);
-        vm.stopPrank();
+        vm.prank(doctor);
+        ehr.grantAccess(patientId, 0);
 
+        // Pay and retrieve
         vm.startPrank(patient);
-        (bool authorized, ) = ehr.getAccessToFile(doctor, 0);
-        assertFalse(authorized);
+        ehr.payForAccess{value: 0.05 ether}(doctorId, 0);
+
+        string memory content = ehr.retrieveFile(doctorId, 0);
         vm.stopPrank();
+        assertEq(content, "QmTestHash");
     }
 
     function testUnauthorizedAccess() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-
-        vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", "test", 1 ether);
-        vm.stopPrank();
-
-        vm.startPrank(other);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                EHRManagement.EHRManagement__PermissionDenied.selector,
-                other
-            )
-        );
-        ehr.retrieveFile(doctor, 0);
-        vm.stopPrank();
-    }
-
-    function testMultiplePatientHandover() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
-
-        vm.startPrank(doctor);
-        ehr.uploadReport("QmTestHash", "test", 50);
-        ehr.grantAccess(patient, 0);
-        vm.stopPrank();
-
-        vm.startPrank(patient);
-        ehr.payForAccess{value: 0.025 ether}(doctor, 0);
-        string memory filehash = ehr.retrieveFile(doctor, 0);
-        assertEq(filehash, "QmTestHash");
-        vm.stopPrank();
-    }
-
-    function testGetFileFee() public {
-        ehr.assignRole(doctor, EHRManagement.Role.DOCTOR);
-        ehr.assignRole(patient, EHRManagement.Role.PATIENT);
         vm.prank(doctor);
         ehr.uploadReport("QmTestHash", "test", 50);
-        vm.prank(patient);
-        uint256 file_fee = ehr.getFileFee(doctor, 0);
-        assertEq(file_fee, 50e18);
+
+        vm.prank(other);
+        vm.expectRevert(EHRManagement.PermissionDenied.selector);
+        ehr.retrieveFile(doctorId, 0);
     }
 
-    function testGetUserAllFile() public {
-        address alice = makeAddr("ALICE");
-        vm.deal(alice, 10 ether);
-        ehr.assignRole(alice, EHRManagement.Role.PATIENT);
-        vm.startPrank(alice);
+    function testAccessRevocation() public {
+        // Setup access
+        vm.prank(doctor);
         ehr.uploadReport("QmTestHash", "test", 50);
-        ehr.uploadReport("QmTestHash2", "test", 100);
-        ehr.uploadReport("QmTestHash3", "test", 150);
-        EHRManagement.File[] memory files = ehr.getAllMyFile();
-        vm.stopPrank();
-        assertEq(files.length, 3);
+        vm.prank(doctor);
+        ehr.grantAccess(patientId, 0);
+
+        // Revoke access
+        vm.prank(doctor);
+        ehr.revokeAccess(patientId, 0);
+
+        // Verify revocation
+        EHRManagement.FileAccess memory access = ehr.getAccessStatus(
+            doctorId,
+            0
+        );
+        assertFalse(access.authorized);
     }
 
-    function testGetMyFile() public {
-        address alon = makeAddr("ALON");
-        vm.deal(alon, 10 ether);
-        ehr.assignRole(alon, EHRManagement.Role.PATIENT);
-        vm.startPrank(alon);
+    function testFeeManagement() public {
+        vm.prank(doctor);
         ehr.uploadReport("QmTestHash", "test", 50);
-        ehr.uploadReport("QmTestHash1", "test", 100);
-        EHRManagement.File memory myFile1 = ehr.getMyFile(0);
-        // string memory fHash = file0.fileHash;
-        // uint256 fee = file0.fee;
-        EHRManagement.File memory myFile2 = ehr.getMyFile(1);
-        // string memory fHash1 = file1.fileHash;
-        // uint256 fee1 = file1.fee;
-        assertEq(myFile1.fileHash, "QmTestHash");
-        assertEq(myFile1.fee, 50e18);
-        assertEq(myFile2.fileHash, "QmTestHash1");
-        assertEq(myFile2.fee, 100e18);
+
+        uint256 fee = ehr.getFileFee(doctorId, 0);
+        assertEq(fee, 50 * 1e18);
+    }
+
+    function testMultipleFiles() public {
+        vm.startPrank(doctor);
+        ehr.uploadReport("QmTestHash1", "test1", 10);
+        ehr.uploadReport("QmTestHash2", "test2", 20);
+        EHRManagement.File[] memory files = ehr.getMyFiles();
         vm.stopPrank();
+        assertEq(files.length, 2);
+        assertEq(files[1].fee, 20 * 1e18);
     }
 }

@@ -8,8 +8,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { handleSolidityError } from "@/utils/handleSolidityError";
 import { getContractWithAlchemy, getRole } from "@/utils/contract.utils";
+import { useWallet } from "@/app/_context/WalletContext";
 
 function DoctorRegisterPage() {
+    const {} = useWallet();
     const [account, setAccount] = useState<string | null>(null);
     const [contractWithSigner, setContractWithSigner] = useState<Contract | null>(null);
     const [contractWithAlchemyProvider, setContractWithAlchemyProvider] = useState<Contract | null>(null);
@@ -64,9 +66,12 @@ function DoctorRegisterPage() {
         if (!contractWithSigner) throw new Error("Connect Wallet First");
         try {
             console.log("Registering as Doctor...");
-            const tx = await contractWithSigner.assignRole(account, 2);
-            const receipt = await tx.wait();
-            console.log("Transaction Receipt: ", receipt);
+            const tx1 = await contractWithSigner.registerUser();
+            const recipt1 = await tx1.wait();
+            console.log("Transaction Receipt: ", recipt1);
+            const tx2 = await contractWithSigner.assignRole(2);
+            const recipt2 = await tx2.wait();
+            console.log("Transaction Receipt: ", recipt2);
         } catch (error) {
             handleSolidityError(contractWithSigner, error);
         }

@@ -14,6 +14,13 @@ contract EHRManagement {
         DOCTOR
     }
 
+    // User structure
+    struct User {
+        Role role;
+        uint256 userId;
+        address userAddress;
+    }
+
     struct File {
         string fileHash;
         string fileName;
@@ -27,68 +34,66 @@ contract EHRManagement {
     }
 
     // Mappings
-    mapping(address => Role) private s_roles;
-    mapping(address => File[]) private s_addressToFiles; // Now an array of files for each address
-    //uploader -> fileID -> grantee -> FileAccess
-    mapping(address => mapping(uint256 => mapping(address => FileAccess)))
+    mapping(address => uint256) private s_addressToUserId;
+    mapping(uint256 => User) private s_users;
+    mapping(uint256 => File[]) private s_userFiles;
+    //doctorId => fileId => patientId => FileAccess
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => FileAccess)))
         private s_access;
 
-    // Global counter for unique file IDs
+    // State variables
     AggregatorV3Interface private s_priceFeed;
+    uint256 private s_userIdCounter;
 
     // Events
-    event RoleAssigned(address indexed user, Role role);
+    event UserRegistered(address indexed user, uint256 indexed userId);
+    event RoleAssigned(uint256 indexed userId, Role role);
     event FileUploaded(
-        address indexed uploader,
+        uint256 indexed userId,
         uint256 indexed fileId,
         string fileHash,
         uint256 fee
     );
     event AccessGranted(
-        address indexed granter,
-        address indexed grantee,
+        uint256 indexed granterId,
+        uint256 indexed granteeId,
         uint256 indexed fileId
     );
     event AccessRevoked(
-        address indexed granter,
-        address indexed grantee,
+        uint256 indexed granterId,
+        uint256 indexed granteeId,
         uint256 indexed fileId
     );
     event PaymentReceived(
-        address indexed patient,
-        address indexed doctor,
+        uint256 indexed patientId,
+        uint256 indexed doctorId,
         uint256 indexed fileId,
         uint256 amount
     );
 
     // Custom errors
-    error EHRManagement__PermissionDenied(address user);
-    error EHRManagement__FileNotFound(uint256 fileId, address owner);
-    error EHRManagement__RoleAlreadyAssigned(address user, Role role);
-    error EHRManagement__InsufficientPayment(
-        uint256 required,
-        uint256 provided
-    );
+    error PermissionDenied();
+    error FileNotFound();
+    error RoleAlreadyAssigned();
+    error InsufficientPayment();
+    error UserNotRegistered();
+    error InvalidCaller();
 
     // Modifiers
     modifier onlyDoctor() {
-        if (s_roles[msg.sender] != Role.DOCTOR) {
-            revert EHRManagement__PermissionDenied(msg.sender);
-        }
+        User memory user = s_users[s_addressToUserId[msg.sender]];
+        if (user.role != Role.DOCTOR) revert PermissionDenied();
         _;
     }
 
     modifier onlyPatient() {
-        if (s_roles[msg.sender] != Role.PATIENT) {
-            revert EHRManagement__PermissionDenied(msg.sender);
-        }
+        User memory user = s_users[s_addressToUserId[msg.sender]];
+        if (user.role != Role.PATIENT) revert PermissionDenied();
         _;
     }
 
-    modifier validRole() {
-        if (s_roles[msg.sender] == Role.NONE) {
-            revert EHRManagement__PermissionDenied(msg.sender);
-        }
+    modifier validUser() {
+        if (s_addressToUserId[msg.sender] == 0) revert UserNotRegistered();
         _;
     }
 
@@ -96,24 +101,40 @@ contract EHRManagement {
         s_priceFeed = AggregatorV3Interface(_priceFeed);
     }
 
-    // Role assignment
-    function assignRole(address _user, Role _role) external {
-        if (s_roles[_user] != Role.NONE) {
-            revert EHRManagement__RoleAlreadyAssigned(_user, s_roles[_user]);
-        }
-        s_roles[_user] = _role;
-        emit RoleAssigned(_user, _role);
+    // User registration
+    function registerUser(Role _role) external {
+        if (s_addressToUserId[msg.sender] != 0) revert RoleAlreadyAssigned();
+
+        uint256 userId = s_userIdCounter++;
+        s_addressToUserId[msg.sender] = s_userIdCounter;
+        s_users[s_userIdCounter] = User({
+            role: _role,
+            userId: userId,
+            userAddress: msg.sender
+        });
+
+        emit UserRegistered(msg.sender, s_userIdCounter);
     }
 
-    // Upload a medical report
+    // Role assignment
+    function assignRole(Role _role) external validUser {
+        uint256 userId = s_addressToUserId[msg.sender];
+        if (s_users[userId].role != Role.NONE) revert RoleAlreadyAssigned();
+
+        s_users[userId].role = _role;
+        emit RoleAssigned(userId, _role);
+    }
+
+    // File management
     function uploadReport(
         string memory _ipfsHash,
         string memory _name,
         uint256 _fee
-    ) external validRole {
-        uint256 newFileId = s_addressToFiles[msg.sender].length;
-        //setting price in USD
-        s_addressToFiles[msg.sender].push(
+    ) external validUser {
+        uint256 userId = s_addressToUserId[msg.sender];
+        uint256 newFileId = s_userFiles[userId].length;
+        if (_fee < 0) revert InsufficientPayment();
+        s_userFiles[userId].push(
             File({
                 fileHash: _ipfsHash,
                 fileName: _name,
@@ -121,124 +142,117 @@ contract EHRManagement {
                 fee: _fee * 1e18
             })
         );
-        emit FileUploaded(msg.sender, newFileId, _ipfsHash, _fee * 1e18);
+
+        emit FileUploaded(userId, newFileId, _ipfsHash, _fee * 1e18);
     }
 
-    // Grant access to a file
-    function grantAccess(address _grantee, uint256 _fileId) external validRole {
-        if (_fileId >= s_addressToFiles[msg.sender].length) {
-            revert EHRManagement__FileNotFound(_fileId, msg.sender);
-        }
-        s_access[msg.sender][_fileId][_grantee] = FileAccess({
+    // Access control
+    function grantAccess(
+        uint256 _granteeId,
+        uint256 _fileId
+    ) external validUser {
+        uint256 granterId = s_addressToUserId[msg.sender];
+        File memory file = _validateFileExists(granterId, _fileId);
+        s_access[granterId][file.fileId][_granteeId] = FileAccess({
             authorized: true,
             paid: false
         });
-        emit AccessGranted(msg.sender, _grantee, _fileId);
+
+        emit AccessGranted(granterId, _granteeId, _fileId);
     }
 
-    // Revoke access to a file
     function revokeAccess(
-        address _grantee,
+        uint256 _granteeId,
         uint256 _fileId
-    ) external validRole {
-        if (!s_access[msg.sender][_fileId][_grantee].authorized) {
-            revert EHRManagement__PermissionDenied(_grantee);
-        }
-        delete s_access[msg.sender][_fileId][_grantee];
-        emit AccessRevoked(msg.sender, _grantee, _fileId);
+    ) external validUser {
+        uint256 granterId = s_addressToUserId[msg.sender];
+        if (!s_access[granterId][_fileId][_granteeId].authorized)
+            revert PermissionDenied();
+
+        delete s_access[granterId][_fileId][_granteeId];
+        emit AccessRevoked(granterId, _granteeId, _fileId);
     }
 
-    // Pay for access
+    // Payments
     function payForAccess(
-        address _doctor,
+        uint256 _doctorId,
         uint256 _fileId
-    ) external payable onlyPatient {
-        File memory file = validateFileExists(_doctor, _fileId);
+    ) external payable validUser {
+        uint256 patientId = s_addressToUserId[msg.sender];
+        File memory file = _validateFileExists(_doctorId, _fileId);
+
         uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
-        //paying in ETHEREUM
-        if (equivalentUSD < file.fee) {
-            revert EHRManagement__InsufficientPayment(file.fee, equivalentUSD);
-        }
-        s_access[_doctor][_fileId][msg.sender].paid = true;
+        if (equivalentUSD < file.fee) revert InsufficientPayment();
 
-        // Transfer payment to the doctor
-        (bool success, ) = _doctor.call{value: msg.value}("");
+        s_access[_doctorId][_fileId][patientId].paid = true;
+
+        address doctorAddress = s_users[_doctorId].userAddress;
+        (bool success, ) = doctorAddress.call{value: msg.value}("");
         if (!success) {
-            s_access[_doctor][_fileId][msg.sender].paid = false;
-            revert("Payment transfer to doctor failed");
+            s_access[_doctorId][_fileId][patientId].paid = false;
+            revert("Payment failed");
         }
 
-        emit PaymentReceived(msg.sender, _doctor, _fileId, msg.value);
+        emit PaymentReceived(patientId, _doctorId, _fileId, msg.value);
     }
 
-    // Retrieve a file
+    // File retrieval
     function retrieveFile(
-        address _owner,
+        uint256 _ownerId,
         uint256 _fileId
-    ) external view validRole returns (string memory) {
-        File memory file = validateFileExists(_owner, _fileId);
-        FileAccess memory access = s_access[_owner][_fileId][msg.sender];
+    ) external view validUser returns (string memory) {
+        uint256 requesterId = s_addressToUserId[msg.sender];
+        File memory file = _validateFileExists(_ownerId, _fileId);
+        FileAccess memory access = s_access[_ownerId][_fileId][requesterId];
+
         if (
-            !access.authorized &&
-            (s_roles[msg.sender] == Role.PATIENT && !access.paid)
+            !access.authorized ||
+            (s_users[requesterId].role == Role.PATIENT && !access.paid)
         ) {
-            revert EHRManagement__PermissionDenied(msg.sender);
+            revert PermissionDenied();
         }
+
         return file.fileHash;
     }
 
-    /*//////////////////////////////////////////////////////////////
-                            HELPER FUNCTION
-    //////////////////////////////////////////////////////////////*/
-    function validateFileExists(
-        address owner,
+    // Helper functions
+    function _validateFileExists(
+        uint256 userId,
         uint256 fileId
     ) internal view returns (File memory) {
-        if (fileId >= s_addressToFiles[owner].length) {
-            revert EHRManagement__FileNotFound(fileId, owner);
-        }
-        return s_addressToFiles[owner][fileId];
+        if (fileId >= s_userFiles[userId].length) revert FileNotFound();
+        return s_userFiles[userId][fileId];
     }
 
-    /*//////////////////////////////////////////////////////////////
-                                GETTERS
-    //////////////////////////////////////////////////////////////*/
+    // Getters
     function getLatestPrice() public view returns (uint256) {
         (, int price, , , ) = s_priceFeed.latestRoundData();
-        return uint256(price * 1e10); // Adjusting the price to 18 decimals
+        return uint256(price * 1e10);
     }
 
-    function getAddressRole(address subject) external view returns (Role) {
-        return s_roles[subject];
+    function getUserRole() external view returns (Role) {
+        return s_users[s_addressToUserId[msg.sender]].role;
     }
 
-    function getAccessToFile(
-        address granter,
-        uint256 fileId
-    ) external view returns (bool authorized, bool paid) {
-        FileAccess memory fileAccess = s_access[granter][fileId][msg.sender];
-        return (fileAccess.authorized, fileAccess.paid);
+    function getUserId() external view returns (uint256) {
+        return s_addressToUserId[msg.sender];
     }
 
-    function getFeed() external view returns (AggregatorV3Interface) {
-        return s_priceFeed;
-    }
-
-    function getMyFile(
-        uint256 fileId
-    ) external view returns (File memory myFile) {
-        myFile = validateFileExists(msg.sender, fileId);
-    }
-
-    function getAllMyFile() external view returns (File[] memory) {
-        return s_addressToFiles[msg.sender];
+    function getMyFiles() external view validUser returns (File[] memory) {
+        return s_userFiles[s_addressToUserId[msg.sender]];
     }
 
     function getFileFee(
-        address _owner,
-        uint256 _fileId
+        uint256 userId,
+        uint256 fileId
     ) external view returns (uint256) {
-        File memory myFile = validateFileExists(_owner, _fileId);
-        return myFile.fee;
+        return _validateFileExists(userId, fileId).fee;
+    }
+
+    function getAccessStatus(
+        uint256 granterId,
+        uint256 fileId
+    ) external view returns (FileAccess memory) {
+        return s_access[granterId][fileId][s_addressToUserId[msg.sender]];
     }
 }

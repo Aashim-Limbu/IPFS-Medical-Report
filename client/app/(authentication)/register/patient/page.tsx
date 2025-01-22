@@ -57,7 +57,10 @@ function RegisterPatientPage() {
         if (!contractWithSigner) throw new Error("Connect Wallet First");
         try {
             console.log("Registering as Patient...");
-            const tx = await contractWithSigner.assignRole(account, 1);
+            const tx1 = await contractWithSigner.registerUser();
+            const recipt1 = await tx1.wait();
+            console.log("Transaction Receipt: ", recipt1);
+            const tx = await contractWithSigner.assignRole(1);
             const receipt = await tx.wait();
             console.log("Transaction Receipt: ", receipt);
         } catch (error) {
