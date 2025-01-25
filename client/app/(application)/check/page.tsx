@@ -19,7 +19,7 @@ function CheckPage() {
     useEffect(() => {
         async function getMyFile() {
             if (!contractWithSigner) return await connectWallet();
-            const files = await contractWithSigner.getAllMyFile() as [];
+            const files = await contractWithSigner.getMyFiles() as [];
             const parsedData = files.map(item => ({ ipfsHash: item[0], name: item[1], fileId: item[2], fee: formatEther(item[3]) })) as FILE[];
             console.log(parsedData);
             setMyFile(parsedData);

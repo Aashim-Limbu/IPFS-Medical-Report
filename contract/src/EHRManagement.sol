@@ -103,28 +103,16 @@ contract EHRManagement {
 
     // User registration
     function registerUser(Role _role) external {
-        if (s_addressToUserId[msg.sender] != 0) revert RoleAlreadyAssigned();
-
-        uint256 userId = s_userIdCounter++;
+        if ( s_addressToUserId[msg.sender] != 0 || s_users[s_addressToUserId[msg.sender]].role != Role.NONE ) revert RoleAlreadyAssigned();
+        s_userIdCounter++;
         s_addressToUserId[msg.sender] = s_userIdCounter;
         s_users[s_userIdCounter] = User({
             role: _role,
-            userId: userId,
+            userId: s_userIdCounter,
             userAddress: msg.sender
         });
-
-        emit UserRegistered(msg.sender, s_userIdCounter);
+        emit RoleAssigned(s_userIdCounter, _role);
     }
-
-    // Role assignment
-    function assignRole(Role _role) external validUser {
-        uint256 userId = s_addressToUserId[msg.sender];
-        if (s_users[userId].role != Role.NONE) revert RoleAlreadyAssigned();
-
-        s_users[userId].role = _role;
-        emit RoleAssigned(userId, _role);
-    }
-
     // File management
     function uploadReport(
         string memory _ipfsHash,

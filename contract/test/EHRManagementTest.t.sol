@@ -27,26 +27,19 @@ contract EHRManagementTest is Test {
 
         // Setup users
         vm.startPrank(doctor);
-        ehr.registerUser();
+        ehr.registerUser(EHRManagement.Role.DOCTOR);
         doctorId = ehr.getUserId();
         vm.stopPrank();
 
         vm.startPrank(patient);
-        ehr.registerUser();
+        ehr.registerUser(EHRManagement.Role.PATIENT);
         patientId = ehr.getUserId();
         vm.stopPrank();
 
         vm.startPrank(other);
-        ehr.registerUser();
+        ehr.registerUser(EHRManagement.Role.PATIENT);
         otherId = ehr.getUserId();
         vm.stopPrank();
-
-        // Assign roles
-        vm.prank(doctor);
-        ehr.assignRole(EHRManagement.Role.DOCTOR);
-
-        vm.prank(patient);
-        ehr.assignRole(EHRManagement.Role.PATIENT);
 
         // Fund accounts
         vm.deal(doctor, 10 ether);
@@ -57,7 +50,7 @@ contract EHRManagementTest is Test {
     function testUserRegistration() public {
         address newUser = makeAddr("NEW_USER");
         vm.prank(newUser);
-        ehr.registerUser();
+        ehr.registerUser(EHRManagement.Role.PATIENT);
         vm.prank(newUser);
         uint256 newUserId = ehr.getUserId();
         assertGt(newUserId, 0);
@@ -75,7 +68,7 @@ contract EHRManagementTest is Test {
     function testCannotReassignRole() public {
         vm.prank(doctor);
         vm.expectRevert(EHRManagement.RoleAlreadyAssigned.selector);
-        ehr.assignRole(EHRManagement.Role.PATIENT);
+        ehr.registerUser(EHRManagement.Role.PATIENT);
     }
 
     function testFileUpload() public {

@@ -1,6 +1,5 @@
 'use client'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 type ModalProps = {
     isOpen: boolean;
@@ -23,19 +22,16 @@ export default function Modal({ isOpen, setIsOpen }: ModalProps) {
                     >
                         <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                             <div className="sm:flex sm:items-start">
-                                <div className="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
-                                    <ExclamationTriangleIcon aria-hidden="true" className="size-6 text-red-600" />
-                                </div>
                                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                     <DialogTitle as="h3" className="text-base font-semibold text-gray-900">
-                                        Deactivate account
+                                        Approve User
                                     </DialogTitle>
                                     <div className="mt-2">
                                         <p className="text-sm text-gray-500">
-                                            Are you sure you want to deactivate your account? All of your data will be permanently removed.
-                                            This action cannot be undone.
+                                            Allow user to view your report
                                         </p>
                                     </div>
+                                    
                                 </div>
                             </div>
                         </div>

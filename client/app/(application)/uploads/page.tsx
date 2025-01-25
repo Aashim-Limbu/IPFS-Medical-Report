@@ -1,7 +1,6 @@
 "use client";
 import { useWallet } from "@/app/_context/WalletContext";
 import useMultistepForm from "@/app/hooks/useMultistepForm";
-import { getContractWithAlchemy } from "@/utils/contract.utils";
 import { pinata } from "@/utils/pinataUtils";
 import { FormEvent, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -18,26 +17,28 @@ const INITIAL_STATE: STATE_TYPE = {
     fee: 0,
 };
 function UploadPage() {
-    const { contractWithSigner } = useWallet();
+    const { contractWithSigner, wsContract } = useWallet();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     useEffect(() => {
         function listener() {
             try {
-                const alchemyContract = getContractWithAlchemy();
-                if (!alchemyContract) throw new Error("Contract not initialized");
+                if (!wsContract) {
+                    return;
+                };
+                console.log("wsContract: ", wsContract);
 
-                function handleUpload(uploader: string, fileId: number, fileHash: string, fee: number) {
+                function handleUpload(userId: number, fileId: number, fileHash: string, fee: number) {
                     setIsLoading(false);
                     toast.success("File Upload Success");
-                    alert(`File Uploaded: ${fileId} by ${uploader} with hash: ${fileHash} and fee: ${fee}`);
+                    alert(`File Uploaded: ${fileId} by ${userId} with hash: ${fileHash} and fee: ${fee}`);
                     router.push("/home");
                 }
 
-                alchemyContract.on("FileUploaded", handleUpload);
+                wsContract.on("FileUploaded", handleUpload);
 
                 return () => {
-                    alchemyContract.removeListener("FileUploaded", handleUpload);
+                    wsContract.removeListener("FileUploaded", handleUpload);
                 };
             } catch (error) {
                 console.error("Error during contract setup:", error);
@@ -45,7 +46,7 @@ function UploadPage() {
         }
 
         return listener();
-    }, [router]);
+    }, [router, wsContract]);
 
     const [data, setData] = useState(INITIAL_STATE);
     console.log("Data.FILE ", data.file);
