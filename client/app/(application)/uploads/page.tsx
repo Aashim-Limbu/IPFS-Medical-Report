@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getContractWithAlchemy } from "@/utils/contract.utils";
 type STATE_TYPE = {
     file: File | null;
     name: string | null;
@@ -17,37 +18,22 @@ const INITIAL_STATE: STATE_TYPE = {
     fee: 0,
 };
 function UploadPage() {
-    const { contractWithSigner, wsContract } = useWallet();
-    const router = useRouter();
+    const { contractWithSigner } = useWallet();
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
+
     useEffect(() => {
-        function listener() {
-            try {
-                if (!wsContract) {
-                    return;
-                };
-                console.log("wsContract: ", wsContract);
-
-                function handleUpload(userId: number, fileId: number, fileHash: string, fee: number) {
-                    setIsLoading(false);
-                    toast.success("File Upload Success");
-                    alert(`File Uploaded: ${fileId} by ${userId} with hash: ${fileHash} and fee: ${fee}`);
-                    router.push("/home");
-                }
-
-                wsContract.on("FileUploaded", handleUpload);
-
-                return () => {
-                    wsContract.removeListener("FileUploaded", handleUpload);
-                };
-            } catch (error) {
-                console.error("Error during contract setup:", error);
-            }
+        function handleFileUploaded(userId: number, fileId: number, ipfsHash: string, fee: number) {
+            toast.success("File uploaded successfully")
+            console.log(userId, fileId, ipfsHash, fee);
+            router.push("/home");
         }
-
-        return listener();
-    }, [router, wsContract]);
-
+        const contract = getContractWithAlchemy();
+        contract.on("FileUploaded", handleFileUploaded);
+        return () => {
+            contract.removeListener("FileUploaded", handleFileUploaded);
+        }
+    }, [router]);
     const [data, setData] = useState(INITIAL_STATE);
     console.log("Data.FILE ", data.file);
     const { isFirstIndex, isLastIndex, next, back, step } = useMultistepForm([

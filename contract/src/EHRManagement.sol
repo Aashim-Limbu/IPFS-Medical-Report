@@ -27,7 +27,11 @@ contract EHRManagement {
         uint256 fileId;
         uint256 fee;
     }
-
+    struct SharedFile {
+        uint256 fileId;
+        string fileName;
+        bool paid;
+    }
     struct FileAccess {
         bool authorized;
         bool paid;
@@ -37,6 +41,8 @@ contract EHRManagement {
     mapping(address => uint256) private s_addressToUserId;
     mapping(uint256 => User) private s_users;
     mapping(uint256 => File[]) private s_userFiles;
+    //patientId => SharedFile[]
+    mapping(uint256 => SharedFile[]) private s_SharedFiles;
     //doctorId => fileId => patientId => FileAccess
     mapping(uint256 => mapping(uint256 => mapping(uint256 => FileAccess)))
         private s_access;
@@ -103,7 +109,10 @@ contract EHRManagement {
 
     // User registration
     function registerUser(Role _role) external {
-        if ( s_addressToUserId[msg.sender] != 0 || s_users[s_addressToUserId[msg.sender]].role != Role.NONE ) revert RoleAlreadyAssigned();
+        if (
+            s_addressToUserId[msg.sender] != 0 ||
+            s_users[s_addressToUserId[msg.sender]].role != Role.NONE
+        ) revert RoleAlreadyAssigned();
         s_userIdCounter++;
         s_addressToUserId[msg.sender] = s_userIdCounter;
         s_users[s_userIdCounter] = User({
@@ -113,6 +122,7 @@ contract EHRManagement {
         });
         emit RoleAssigned(s_userIdCounter, _role);
     }
+
     // File management
     function uploadReport(
         string memory _ipfsHash,
@@ -140,12 +150,19 @@ contract EHRManagement {
         uint256 _fileId
     ) external validUser {
         uint256 granterId = s_addressToUserId[msg.sender];
+        if(granterId == _granteeId) revert PermissionDenied();
         File memory file = _validateFileExists(granterId, _fileId);
         s_access[granterId][file.fileId][_granteeId] = FileAccess({
             authorized: true,
             paid: false
         });
-
+        s_SharedFiles[_granteeId].push(
+            SharedFile({
+                fileId: file.fileId,
+                fileName: file.fileName,
+                paid: false
+            })
+        );
         emit AccessGranted(granterId, _granteeId, _fileId);
     }
 
@@ -173,6 +190,7 @@ contract EHRManagement {
         if (equivalentUSD < file.fee) revert InsufficientPayment();
 
         s_access[_doctorId][_fileId][patientId].paid = true;
+        s_SharedFiles[patientId][_fileId].paid = true;
 
         address doctorAddress = s_users[_doctorId].userAddress;
         (bool success, ) = doctorAddress.call{value: msg.value}("");
@@ -220,6 +238,10 @@ contract EHRManagement {
 
     function getUserRole() external view returns (Role) {
         return s_users[s_addressToUserId[msg.sender]].role;
+    }
+
+    function getSharedFiles() external view returns (SharedFile[] memory) {
+        return s_SharedFiles[s_addressToUserId[msg.sender]];
     }
 
     function getUserId() external view returns (uint256) {

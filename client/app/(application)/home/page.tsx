@@ -1,11 +1,19 @@
 "use client";
 import { useWallet } from "@/app/_context/WalletContext";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect } from "react";
 import { GrDocumentUpload } from "react-icons/gr";
 import { LuFileSearch } from "react-icons/lu";
+import { PiUserCircleCheckDuotone } from "react-icons/pi";
 function DashBoardPage() {
-    const { account, handleDisconnect } = useWallet();
+    const { account, connectWallet, handleDisconnect } = useWallet();
+    useEffect(() => {
+        async function initializeAccount() {
+            if (!account) await connectWallet();
+        }
+        console.log("hello")
+        initializeAccount();
+    }, [account]);
     function handleClick() {
         handleDisconnect();
         window.location.reload();
@@ -30,12 +38,9 @@ function DashBoardPage() {
                     </button>
                 </div>
             </div>
-            <div className="h-full w-full flex-1 flex items-center justify-around">
-                <Link
-                    href="/uploads"
-                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
-                >
-                    <div className="text-8xl">
+            <div className=" flex-1 w-full grid grid-cols-3 gap-x-4 items-center px-4">
+                <Link href="/uploads" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md" >
+                    <div className="text-9xl">
                         <GrDocumentUpload />
                     </div>
                     <div className="font-semibold text-xl">Upload</div>
@@ -46,6 +51,14 @@ function DashBoardPage() {
                     </p>
                     <p className="font-semibold text-xl">
                         Check
+                    </p>
+                </Link>
+                <Link href="/approvefiles" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md">
+                    <p className="text-9xl">
+                        <PiUserCircleCheckDuotone />
+                    </p>
+                    <p className="font-semibold text-xl">
+                        Approved Files
                     </p>
                 </Link>
             </div>

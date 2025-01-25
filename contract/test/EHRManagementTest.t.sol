@@ -182,4 +182,33 @@ contract EHRManagementTest is Test {
         assertEq(files.length, 2);
         assertEq(files[1].fee, 20 * 1e18);
     }
+
+    function testSharedFiles() public {
+        //Doctor
+        vm.startPrank(doctor);
+        vm.expectEmit(true, true, false, true, address(ehr));
+        emit EHRManagement.FileUploaded(doctorId, 0, "QmTestHash", 3000e18);
+        ehr.uploadReport("QmTestHash", "test", 3000);
+        ehr.grantAccess(patientId, 0);
+        vm.stopPrank();
+
+        vm.prank(patient);
+        EHRManagement.SharedFile[] memory sharedFiles = ehr.getSharedFiles();
+        assertEq(sharedFiles[0].fileName, "test");
+        // self grant Access
+        vm.prank(doctor);
+        vm.expectRevert(EHRManagement.PermissionDenied.selector);
+        ehr.grantAccess(doctorId, 0);
+        //unpaid retrieval
+        vm.prank(patient);
+        vm.expectRevert(EHRManagement.PermissionDenied.selector);
+        ehr.retrieveFile(doctorId, 0);
+
+        //paid Retrieval
+        vm.startPrank(patient);
+        ehr.payForAccess{value: 1 ether}(doctorId, 0);
+        string memory content = ehr.retrieveFile(doctorId, 0);
+        vm.stopPrank();
+        assertEq(content, "QmTestHash");
+    }
 }
