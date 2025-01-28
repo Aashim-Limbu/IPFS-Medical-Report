@@ -15,7 +15,7 @@ function LoginPage() {
     }
     return (
         <div className="w-full min-h-screen bg-gray-200 flex flex-col items-center justify-center">
-            <div className="bg-white/40 p-8 max-w-2xl w-full backdrop-blur-sm rounded-md shadow-md">
+            <div className="bg-white/40 p-8 max-w-2xl w-full backdrop-blur-xs rounded-md shadow-md">
                 <div className="w-full flex justify-center ">
                     <Image src={Logo} alt="Logo" className="w-16 ring-4 ring-indigo-600 rounded-md p-1 " width={0} height={0} />
                 </div>

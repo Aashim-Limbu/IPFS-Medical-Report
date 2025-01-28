@@ -29,6 +29,7 @@ contract EHRManagement {
     }
     struct SharedFile {
         uint256 fileId;
+        uint256 price;
         string fileName;
         bool paid;
     }
@@ -150,7 +151,7 @@ contract EHRManagement {
         uint256 _fileId
     ) external validUser {
         uint256 granterId = s_addressToUserId[msg.sender];
-        if(granterId == _granteeId) revert PermissionDenied();
+        if (granterId == _granteeId) revert PermissionDenied();
         File memory file = _validateFileExists(granterId, _fileId);
         s_access[granterId][file.fileId][_granteeId] = FileAccess({
             authorized: true,
@@ -160,6 +161,7 @@ contract EHRManagement {
             SharedFile({
                 fileId: file.fileId,
                 fileName: file.fileName,
+                price: file.fee,
                 paid: false
             })
         );

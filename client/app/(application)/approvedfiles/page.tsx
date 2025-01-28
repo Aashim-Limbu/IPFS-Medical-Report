@@ -1,0 +1,109 @@
+"use client"
+import { useWallet } from '@/app/_context/WalletContext'
+import { getContractWithSigner } from '@/utils/contract.utils';
+import { formatEther } from 'ethers';
+import React, { useEffect, useState } from 'react'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
+// Define the type for a file object
+type ApprovedFile = {
+    fileId: number;
+    price: string;
+    fileName: string;
+    paid: boolean;
+};
+const statuses = {
+    Complete: 'text-green-700 bg-green-50 ring-green-600/20',
+    Unpaid: 'text-gray-600 bg-gray-50 ring-gray-500/10',
+}
+function classNames(...classes: string[]) {
+    return classes.filter(Boolean).join(' ')
+}
+
+function ApproveFilesPage() {
+    const { contractWithSigner, connectWallet } = useWallet();
+    // Explicitly define the type of `approvedFiles` as an array of `ApprovedFile`
+    const [approvedFiles, setApprovedFiles] = useState<ApprovedFile[]>([]);
+
+    useEffect(() => {
+        async function getApprovedFiles() {
+            try {
+                const contractWithSigner = await getContractWithSigner();
+                const files = await contractWithSigner.getSharedFiles();
+                if (Array.isArray(files)) {
+                    // TypeScript now knows the shape of `parsedFiles`
+                    const parsedFiles = files.map((item) => ({
+                        fileId: Number(item[0]),
+                        price: formatEther(item[1]),
+                        fileName: item[2],
+                        paid: item[3]
+                    }));
+                    setApprovedFiles(parsedFiles);
+                    console.log("Approved Files: ", parsedFiles);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        getApprovedFiles();
+    }, []);
+
+    return (
+        <div className='px-8'>
+            <div>
+                <h1 className="text-xl font-semibold leading-7 text-gray-900 sm:text-xl sm:leading-9">Approved Files</h1>
+                <p className='text-gray-600 font-thin tracking-tight'>Look out for the approved files</p>
+            </div>
+            <ul role="list" className="divide-y divide-gray-200">
+                {approvedFiles.map((file) => (
+                    <li key={file.fileId} className="flex items-center justify-between gap-x-6 py-5">
+                        <div className="min-w-0">
+                            <div className="flex items-start gap-x-3">
+                                <p className="text-sm font-semibold leading-6 text-gray-900">{file.fileName}</p>
+                                <p
+                                    className={classNames(
+                                        statuses[file.paid ? 'Complete' : 'Unpaid'],
+                                        'mt-0.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset',
+                                    )}
+                                >
+                                    {file.paid ? 'Complete' : 'Unpaid'}
+                                </p>
+                            </div>
+                            <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">
+                                <p className="whitespace-nowrap">
+                                    File Id:
+                                    <span className="font-semibold ml-2">{file.fileId}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-none items-center gap-x-4">
+                            <button
+                                className="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
+                            >
+                                View project<span className="sr-only">, {file.fileName}</span>
+                            </button>
+                            <Menu as="div" className="relative flex-none">
+                                <MenuButton className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
+                                    <span className="sr-only">Open options</span>
+                                    <EllipsisVerticalIcon aria-hidden="true" className="h-5 w-5" />
+                                </MenuButton>
+                                <MenuItems
+                                    transition
+                                    className="absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75 data-enter:ease-out data-leave:ease-in"
+                                >
+                                    <MenuItem>
+                                        <a href="#" className="block px-3 py-1 text-sm leading-6 text-gray-900 data-focus:bg-gray-50">
+                                            Delete<span className="sr-only">, {file.fileName}</span>
+                                        </a>
+                                    </MenuItem>
+                                </MenuItems>
+                            </Menu>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default ApproveFilesPage;

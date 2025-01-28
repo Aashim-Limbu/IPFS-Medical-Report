@@ -1,6 +1,5 @@
 import { BrowserProvider, Contract, WebSocketProvider } from "ethers";
 import contractAbi from "@/../contract/out/EHRManagement.sol/EHRManagement.json";
-import { JsonRpcSigner } from "ethers";
 export function getRole(index: number) {
   switch (index) {
     case 0:
@@ -23,14 +22,19 @@ export function getContractWithAlchemy() {
     wsProvider
   );
 }
-export function getContractWithSigner(signer: JsonRpcSigner) {
+export async function getContractWithSigner() {
+  if (!window.ethereum) throw new Error("Metamask not installed");
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
   return new Contract(
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     contractAbi.abi,
     signer
   );
 }
-export function getContractWithProvider(provider: BrowserProvider) {
+export function getContractWithProvider() {
+  if (!window.ethereum) throw new Error("Metamask not installed");
+  const provider = new BrowserProvider(window.ethereum);
   return new Contract(
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     contractAbi.abi,

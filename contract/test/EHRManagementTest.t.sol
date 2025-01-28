@@ -194,6 +194,7 @@ contract EHRManagementTest is Test {
 
         vm.prank(patient);
         EHRManagement.SharedFile[] memory sharedFiles = ehr.getSharedFiles();
+        assertEq(sharedFiles[0].price, 3000e18);
         assertEq(sharedFiles[0].fileName, "test");
         // self grant Access
         vm.prank(doctor);

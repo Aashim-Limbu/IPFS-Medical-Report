@@ -3,8 +3,8 @@ import { useWallet } from '@/app/_context/WalletContext'
 import React, { useEffect, useState } from 'react'
 import { GoFileDirectory } from "react-icons/go";
 import { formatEther } from 'ethers';
-import Link from 'next/link';
-import Modal from '@/app/_components/Modal';
+import { getContractWithSigner } from '@/utils/contract.utils';
+import Modal from '@/app/_components/ApproveModal';
 type FILE = {
     ipfsHash: string,
     name: string,
@@ -13,22 +13,30 @@ type FILE = {
 }
 
 function CheckPage() {
-    const { contractWithSigner, connectWallet } = useWallet();
+    const { connectWallet } = useWallet();
     const [isOpen, setIsOpen] = useState(false);
     const [myFile, setMyFile] = useState<FILE[] | null>(null)
+    const [select, setSelect] = useState<number | null>(null);
     useEffect(() => {
         async function getMyFile() {
-            if (!contractWithSigner) return await connectWallet();
-            const files = await contractWithSigner.getMyFiles() as [];
-            const parsedData = files.map(item => ({ ipfsHash: item[0], name: item[1], fileId: item[2], fee: formatEther(item[3]) })) as FILE[];
-            console.log(parsedData);
-            setMyFile(parsedData);
+            try {
+                const contractWithSigner = await getContractWithSigner();
+                const files = await contractWithSigner.getMyFiles() as unknown;
+                console.log("Files: ", files);
+                if (Array.isArray(files)) {
+                    const parsedData = files.map(item => ({ ipfsHash: item[0], name: item[1], fileId: item[2], fee: formatEther(item[3]) })) as FILE[];
+                    console.log(parsedData);
+                    setMyFile(parsedData);
+                }
+            } catch (error) {
+                console.error(error);
+            }
         }
         getMyFile()
-    }, [contractWithSigner, connectWallet])
+    }, [connectWallet])
     return (
         <>
-            {isOpen && <Modal isOpen={isOpen} setIsOpen={() => { setIsOpen(false) }} />}
+            {isOpen && <Modal isOpen={isOpen} setIsOpen={() => { setIsOpen(false) }} fileId={select} />}
             <div className="px-4 sm:px-6 lg:px-8 py-4 min-h-screen">
                 <div className="sm:flex sm:items-center">
                     <div className="sm:flex-auto">
@@ -82,7 +90,10 @@ function CheckPage() {
                                             <td className="whitespace-nowrap px-3 py-5 text-sm text-center text-gray-500">{file.fileId}</td>
                                             <td className="whitespace-nowrap px-3 py-5 text-center text-sm text-gray-500">$ {file.fee}</td>
                                             <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                                <button onClick={() => setIsOpen(true)} className="text-indigo-600 hover:text-indigo-900">
+                                                <button onClick={() => {
+                                                    setIsOpen(true)
+                                                    setSelect(Number(file.fileId))
+                                                }} className="text-indigo-600 hover:text-indigo-900">
                                                     Approve<span className="sr-only">approve</span>
                                                 </button>
                                                 {/* <Link href="#" className="text-indigo-600 hover:text-indigo-900">

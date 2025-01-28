@@ -66,7 +66,7 @@ function DoctorRegisterPage() {
         if (!contractWithSigner) throw new Error("Connect Wallet First");
         try {
             console.log("Registering as Doctor...");
-            const tx = await contractWithSigner.registerUser();
+            const tx = await contractWithSigner.registerUser(2);
             const recipt = await tx.wait();
             console.log("Transaction Receipt: ", recipt);
         } catch (error) {

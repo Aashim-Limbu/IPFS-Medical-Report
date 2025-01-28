@@ -1,30 +1,34 @@
 "use client";
 import { useWallet } from "@/app/_context/WalletContext";
 import Link from "next/link";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { GrDocumentUpload } from "react-icons/gr";
 import { LuFileSearch } from "react-icons/lu";
 import { PiUserCircleCheckDuotone } from "react-icons/pi";
 function DashBoardPage() {
     const { account, connectWallet, handleDisconnect } = useWallet();
+    const isDisconnecting = useRef(false);
     useEffect(() => {
         async function initializeAccount() {
-            if (!account) await connectWallet();
+            if (!account && !isDisconnecting.current) await connectWallet();
         }
-        console.log("hello")
         initializeAccount();
-    }, [account]);
+        console.log("Triggred");
+    }, [account, connectWallet]);
+    useEffect(() => {
+        console.log("Test Connect Wallet re-render")
+    }, [connectWallet])
     function handleClick() {
+        isDisconnecting.current = true;
         handleDisconnect();
         window.location.reload();
-
     }
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <div className="p-4 shadow-md flex items-center justify-between">
                 <Link
                     href="/home"
-                    className="text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
+                    className="text-2xl bg-clip-text text-transparent bg-linear-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
                 >
                     MEDREPO
                 </Link>
@@ -33,33 +37,41 @@ function DashBoardPage() {
                         <span className="font-semibold text-green-950 mr-2">Account:</span>
                         {account}
                     </div>
-                    <button onClick={handleClick} className="text-xl bg-[#084081] p-2 px-6 rounded-md font-semibold text-white">
+                    <button
+                        onClick={handleClick}
+                        className="text-xl bg-[#084081] p-2 px-6 rounded-md font-semibold text-white"
+                    >
                         Disconnect
                     </button>
                 </div>
             </div>
             <div className=" flex-1 w-full grid grid-cols-3 gap-x-4 items-center px-4">
-                <Link href="/uploads" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md" >
+                <Link
+                    href="/uploads"
+                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
+                >
                     <div className="text-9xl">
                         <GrDocumentUpload />
                     </div>
                     <div className="font-semibold text-xl">Upload</div>
                 </Link>
-                <Link href="/check" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md">
+                <Link
+                    href="/check"
+                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
+                >
                     <p className="text-9xl">
                         <LuFileSearch />
                     </p>
-                    <p className="font-semibold text-xl">
-                        Check
-                    </p>
+                    <p className="font-semibold text-xl">Check</p>
                 </Link>
-                <Link href="/approvefiles" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md">
+                <Link
+                    href="/approvedfiles"
+                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
+                >
                     <p className="text-9xl">
                         <PiUserCircleCheckDuotone />
                     </p>
-                    <p className="font-semibold text-xl">
-                        Approved Files
-                    </p>
+                    <p className="font-semibold text-xl">Approved Files</p>
                 </Link>
             </div>
         </div>
