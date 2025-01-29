@@ -18,13 +18,12 @@ export default function Modal({ isOpen, setIsOpen, fileId }: ModalProps) {
             setIsLoading(false);
             console.log("Access Granted: ", granteeId, fileId);
             toast.success("Access Granted");
-
         }
-        function approveListener() {
-            const contractWithAlchemy = getContractWithAlchemy();
-            contractWithAlchemy.on("AccessGranted", handleEvent);
+        const contractWithWebSocket = getContractWithAlchemy();
+        contractWithWebSocket.on("AccessGranted", handleEvent);
+        return () => {
+            contractWithWebSocket.removeAllListeners("AccessGranted");
         }
-        approveListener();
     }, [])
     async function handleApprove() {
         try {

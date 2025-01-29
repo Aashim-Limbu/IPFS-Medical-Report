@@ -7,70 +7,61 @@ import { Contract } from "ethers";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { handleSolidityError } from "@/utils/handleSolidityError";
-import { getContractWithAlchemy, getRole } from "@/utils/contract.utils";
+import { getContractWithAlchemy, getRole, getContractWithSigner } from '@/utils/contract.utils';
 import { useWallet } from "@/app/_context/WalletContext";
 
 function DoctorRegisterPage() {
     const { } = useWallet();
     const [account, setAccount] = useState<string | null>(null);
-    const [contractWithSigner, setContractWithSigner] = useState<Contract | null>(null);
-    const [contractWithAlchemyProvider, setContractWithAlchemyProvider] = useState<Contract | null>(null);
     const router = useRouter();
 
     // Set up the contract and event listener for RoleAssigned event
     useEffect(() => {
-        const initializeContract = () => {
-            try {
-                const alchemyContract = getContractWithAlchemy();
-                setContractWithAlchemyProvider(alchemyContract);
-                if (!alchemyContract) return;
-                const handleRoleAssigned = (user: string, role: number) => {
-                    const roleName = getRole(Number(role));
-                    console.log(role, typeof role);
-                    toast.success("User Registered");
-                    toast.message("Registration", {
-                        description: `Address: ${user}, Role: ${roleName}`,
-                    });
-                    router.push("/login");
-                    console.log(`RoleAssigned event: User: ${user}, Role: ${roleName}`);
-                };
 
-                alchemyContract.on("RoleAssigned", handleRoleAssigned);
-
-                return () => {
-                    alchemyContract.removeListener("RoleAssigned", handleRoleAssigned);
-                };
-            } catch (error) {
-                console.error("Error initializing contract with Alchemy: ", error);
-            }
+        const handleRoleAssigned = (user: string, role: number) => {
+            const roleName = getRole(Number(role));
+            console.log(role, typeof role);
+            toast.success("User Registered");
+            toast.message("Registration", {
+                description: `Address: ${user}, Role: ${roleName}`,
+            });
+            router.push("/login");
+            console.log(`RoleAssigned event: User: ${user}, Role: ${roleName}`);
         };
 
-        return initializeContract();
+        const alchemyContract = getContractWithAlchemy();
+        alchemyContract.on("RoleAssigned", handleRoleAssigned);
+
+        return () => {
+            alchemyContract.removeListener("RoleAssigned", handleRoleAssigned);
+        };
+
     }, [router]);
 
     // Handle wallet connection
     const handleConnect = async () => {
         try {
-            const response = await connectWallet();
-            const { contractWithSignerInstance, selectedAccount } = response;
+            const { selectedAccount } = await connectWallet();
             setAccount(selectedAccount);
-            setContractWithSigner(contractWithSignerInstance);
         } catch (error) {
-            alert("Wallet Connection Error");
             console.error(error)
         }
     };
 
     // Register the user as a Doctor
     const handleRegister = async () => {
-        if (!contractWithSigner) throw new Error("Connect Wallet First");
+        const contractWithSigner = await getContractWithSigner();
         try {
             console.log("Registering as Doctor...");
             const tx = await contractWithSigner.registerUser(2);
             const recipt = await tx.wait();
-            console.log("Transaction Receipt: ", recipt);
+            if (recipt.status === 1) {
+                toast.success("Doctor Registered");
+            } else {
+                toast.error("Doctor Registration Failed");
+            }
         } catch (error) {
-            handleSolidityError(contractWithSigner, error);
+            handleSolidityError(error);
         }
     };
 

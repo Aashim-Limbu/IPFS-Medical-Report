@@ -1,5 +1,4 @@
 "use client"
-import { useWallet } from '@/app/_context/WalletContext'
 import { getContractWithSigner } from '@/utils/contract.utils';
 import { formatEther } from 'ethers';
 import React, { useEffect, useState } from 'react'
@@ -7,8 +6,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import { parseUnits } from 'ethers';
 import { toast } from 'sonner';
-import { revalidatePath } from 'next/cache';
-// Define the type for a file object
+
 type ApprovedFile = {
     fileId: number;
     ownerId: number;
@@ -25,7 +23,6 @@ function classNames(...classes: string[]) {
 }
 
 function ApproveFilesPage() {
-    // Explicitly define the type of `approvedFiles` as an array of `ApprovedFile`
     const [approvedFiles, setApprovedFiles] = useState<ApprovedFile[]>([]);
     useEffect(() => {
         async function getApprovedFiles() {
@@ -34,7 +31,6 @@ function ApproveFilesPage() {
                 const files = await contractWithSigner.getSharedFiles();
                 console.log("Files:", files)
                 if (Array.isArray(files)) {
-                    // TypeScript now knows the shape of `parsedFiles`
                     const parsedFiles = files.map((item) => ({
                         fileId: Number(item[0]),
                         ownerId: Number(item[1]),
@@ -56,15 +52,17 @@ function ApproveFilesPage() {
             const contractWithSigner = await getContractWithSigner();
             console.log(contractWithSigner)
             const EthPrice = await contractWithSigner.getLatestPrice() as bigint;
-            // console.log("Equivalent: ", parseUnits(fee,18)/ EthPrice);
             // Add 1% buffer to handle price fluctuations
             const equivalentEth = (parseUnits(fee, 18) * BigInt(10 ** 18) * BigInt(101) / BigInt(100)) / EthPrice;
             console.log("equivalent ETH", equivalentEth);
             const tx = await contractWithSigner.payForAccess(doctorId, fileId, { value: equivalentEth });
             const recipt = await tx.wait();
             setApprovedFiles(prevFile => prevFile.map(file => (file.fileId == fileId && file.ownerId == doctorId) ? { ...file, paid: true } : file));
-            toast.success("Payment Successful");
-            // console.log(recipt);
+            if (recipt.status == 1) {
+                toast.success("Payment Successful. Transaction Hash: ", recipt.hash);
+            } else {
+                toast.error("Payment Failed. Transaction Hash: ", recipt.hash);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -102,14 +100,14 @@ function ApproveFilesPage() {
                             </div>
                         </div>
                         <div className="flex flex-none items-center gap-x-4">
-                            <button
-                                className="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
-                            >
-                                View File<span className="sr-only">, {file.fileName}</span>
-                            </button>
+
                             {
-                                <button onClick={async () => await handlePayment(file.ownerId, file.fileId, file.price)} className="hidden rounded-md bg-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
-                                >Pay {file.price}</button>
+                                file.paid ? <button onClick={async () => await handlePayment(file.ownerId, file.fileId, file.price)} className="hidden rounded-md bg-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
+                                >Pay {file.price}</button> : <button
+                                    className="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
+                                >
+                                    View File<span className="sr-only">, {file.fileName}</span>
+                                </button>
                             }
                             <Menu as="div" className="relative flex-none">
                                 <MenuButton className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">

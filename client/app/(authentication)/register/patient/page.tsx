@@ -2,35 +2,26 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image';
 import Patient from '@/public/patient-svg.svg';
-import { Contract } from 'ethers';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleSolidityError } from '@/utils/handleSolidityError';
 import Link from 'next/link';
-import { getContractWithAlchemy, getRole } from '@/utils/contract.utils';
+import { getContractWithAlchemy, getContractWithSigner, getRole } from '@/utils/contract.utils';
 import { connectWallet } from '@/utils/wallet';
 
 function RegisterPatientPage() {
     const [account, setAccount] = useState<string | null>(null);
-    const [contractWithSigner, setContractWithSigner] = useState<Contract | null>(null);
-    const [contractWithAlchemyProvider, setContractWithAlchemyProvider] = useState<Contract | null>(null);
     const router = useRouter();
     useEffect(() => {
-         function initializeContract() {
+        function initializeContract() {
             try {
-                const alchemyContract = getContractWithAlchemy();
-                setContractWithAlchemyProvider(alchemyContract);
-                if (!alchemyContract) return;
                 const handleRoleAssigned = (userId: number, role: number) => {
                     const roleName = getRole(Number(role));
-                    toast.success("User Registered");
-                    toast.message("Registration", {
-                        description: `userId: ${userId}, Role: ${roleName}`,
-                    });
                     router.push("/login");
                     console.log(`RoleAssigned event: User: ${userId}, Role: ${roleName}`);
                 };
 
+                const alchemyContract = getContractWithAlchemy();
                 alchemyContract.on("RoleAssigned", handleRoleAssigned);
 
                 return () => {
@@ -45,23 +36,25 @@ function RegisterPatientPage() {
     const handleConnect = async () => {
         try {
             const response = await connectWallet();
-            const { contractWithSignerInstance, selectedAccount } = response;
+            const { selectedAccount } = response;
             setAccount(selectedAccount);
-            setContractWithSigner(contractWithSignerInstance);
         } catch (error) {
             alert("Wallet Connection Error");
             console.error(error)
         }
     };
     const handleRegister = async () => {
-        if (!contractWithSigner) throw new Error("Connect Wallet First");
+        const contractWithSigner = await getContractWithSigner();
         try {
-            console.log("Registering as Patient...");
             const tx = await contractWithSigner.registerUser(1);
             const recipt = await tx.wait();
-            console.log("Transaction Receipt: ", recipt);
+            if (recipt.status == 1) {
+                toast.success("User Registered");
+            } else {
+                toast.error("Error Registering User");
+            }
         } catch (error) {
-            handleSolidityError(contractWithSigner, error);
+            handleSolidityError(error);
         }
     };
     return (

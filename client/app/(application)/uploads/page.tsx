@@ -24,7 +24,6 @@ function UploadPage() {
 
     useEffect(() => {
         function handleFileUploaded(userId: number, fileId: number, ipfsHash: string, fee: number) {
-            toast.success("File uploaded successfully")
             console.log(userId, fileId, ipfsHash, fee);
             router.push("/home");
         }
@@ -58,10 +57,12 @@ function UploadPage() {
                 .key(keyData.JWT);
             const tx = await contractWithSigner.uploadReport(upload.IpfsHash, data.file.name, data.fee);
             const recipt = await tx.wait();
-            console.log("recipt: ", recipt);
-            console.log("IPFS HASH: ", upload.IpfsHash);
+            if (recipt.status === 1) {
+                toast.success("File Uploaded Successfully");
+            } else {
+                toast.error("Error Uploading File");
+            }
         } catch (error) {
-            alert("Error: ", error);
             console.error("Error uploading to Pinata:", error);
         }
     }
