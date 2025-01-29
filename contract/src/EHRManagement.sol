@@ -29,6 +29,7 @@ contract EHRManagement {
     }
     struct SharedFile {
         uint256 fileId;
+        uint256 ownerId;
         uint256 price;
         string fileName;
         bool paid;
@@ -160,6 +161,7 @@ contract EHRManagement {
         s_SharedFiles[_granteeId].push(
             SharedFile({
                 fileId: file.fileId,
+                ownerId: granterId,
                 fileName: file.fileName,
                 price: file.fee,
                 paid: false
@@ -187,7 +189,10 @@ contract EHRManagement {
     ) external payable validUser {
         uint256 patientId = s_addressToUserId[msg.sender];
         File memory file = _validateFileExists(_doctorId, _fileId);
-
+        if (!s_access[_doctorId][_fileId][patientId].authorized)
+            revert PermissionDenied();
+        if (s_access[_doctorId][_fileId][patientId].paid)
+            revert InsufficientPayment();
         uint256 equivalentUSD = msg.value.getEquivalentUSD(s_priceFeed);
         if (equivalentUSD < file.fee) revert InsufficientPayment();
 
@@ -250,8 +255,11 @@ contract EHRManagement {
         return s_addressToUserId[msg.sender];
     }
 
-    function getMyFiles() external view validUser returns (File[] memory) {
-        return s_userFiles[s_addressToUserId[msg.sender]];
+    function getAccessStatus(
+        uint256 granterId,
+        uint256 fileId
+    ) external view returns (FileAccess memory) {
+        return s_access[granterId][fileId][s_addressToUserId[msg.sender]];
     }
 
     function getFileFee(
@@ -261,10 +269,7 @@ contract EHRManagement {
         return _validateFileExists(userId, fileId).fee;
     }
 
-    function getAccessStatus(
-        uint256 granterId,
-        uint256 fileId
-    ) external view returns (FileAccess memory) {
-        return s_access[granterId][fileId][s_addressToUserId[msg.sender]];
+    function getMyFiles() external view validUser returns (File[] memory) {
+        return s_userFiles[s_addressToUserId[msg.sender]];
     }
 }

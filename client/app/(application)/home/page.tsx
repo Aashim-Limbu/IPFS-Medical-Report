@@ -28,7 +28,7 @@ function DashBoardPage() {
             <div className="p-4 shadow-md flex items-center justify-between">
                 <Link
                     href="/home"
-                    className="text-2xl bg-clip-text text-transparent bg-linear-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
+                    className="text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
                 >
                     MEDREPO
                 </Link>
@@ -37,41 +37,33 @@ function DashBoardPage() {
                         <span className="font-semibold text-green-950 mr-2">Account:</span>
                         {account}
                     </div>
-                    <button
-                        onClick={handleClick}
-                        className="text-xl bg-[#084081] p-2 px-6 rounded-md font-semibold text-white"
-                    >
+                    <button onClick={handleClick} className="text-xl bg-[#084081] p-2 px-6 rounded-md font-semibold text-white">
                         Disconnect
                     </button>
                 </div>
             </div>
             <div className=" flex-1 w-full grid grid-cols-3 gap-x-4 items-center px-4">
-                <Link
-                    href="/uploads"
-                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
-                >
+                <Link href="/uploads" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md" >
                     <div className="text-9xl">
                         <GrDocumentUpload />
                     </div>
                     <div className="font-semibold text-xl">Upload</div>
                 </Link>
-                <Link
-                    href="/check"
-                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
-                >
+                <Link href="/check" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md">
                     <p className="text-9xl">
                         <LuFileSearch />
                     </p>
-                    <p className="font-semibold text-xl">Check</p>
+                    <p className="font-semibold text-xl">
+                        Check
+                    </p>
                 </Link>
-                <Link
-                    href="/approvedfiles"
-                    className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md"
-                >
+                <Link href="/approvedfiles" className="w-full max-w-2xl inline-flex flex-col gap-8 items-center justify-center p-8 py-32 ring-2 text-gray-700 ring-gray-200 backdrop-blur-md bg-gray-200/30 rounded-2xl shadow-md">
                     <p className="text-9xl">
                         <PiUserCircleCheckDuotone />
                     </p>
-                    <p className="font-semibold text-xl">Approved Files</p>
+                    <p className="font-semibold text-xl">
+                        Approved Files
+                    </p>
                 </Link>
             </div>
         </div>

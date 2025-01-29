@@ -196,6 +196,7 @@ contract EHRManagementTest is Test {
         EHRManagement.SharedFile[] memory sharedFiles = ehr.getSharedFiles();
         assertEq(sharedFiles[0].price, 3000e18);
         assertEq(sharedFiles[0].fileName, "test");
+        assertEq(sharedFiles[0].ownerId, doctorId);
         // self grant Access
         vm.prank(doctor);
         vm.expectRevert(EHRManagement.PermissionDenied.selector);
@@ -207,6 +208,8 @@ contract EHRManagementTest is Test {
 
         //paid Retrieval
         vm.startPrank(patient);
+        ehr.payForAccess{value: 1 ether}(doctorId, 0);
+        vm.expectRevert(EHRManagement.InsufficientPayment.selector);
         ehr.payForAccess{value: 1 ether}(doctorId, 0);
         string memory content = ehr.retrieveFile(doctorId, 0);
         vm.stopPrank();

@@ -16,7 +16,7 @@ export default function Home() {
       <nav className="flex flex-row items-center justify-between absolute top-0 left-0 w-full bg-white shadow-md p-4">
         <Link
           href="/"
-          className="text-2xl bg-clip-text text-transparent bg-linear-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
+          className="text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#456fe8] to-[#19b0ec] font-extrabold font-mono tracking-wider"
         >
           MEDREPO
         </Link>
@@ -36,7 +36,7 @@ export default function Home() {
         </div>
       </nav>
       <div className="pt-28 flex flex-col gap-y-8  lg:flex-row items-center lg:justify-around lg:space-x-2 h-full w-full">
-        <div className="w-full order-2 lg:-order-2 text-center lg:text-left md:flex md:flex-col  md:space-y-4 max-w-xl lg:max-w-2xl backdrop-blur-xs rounded-xl p-6 text-gray-800  bg-white/20 shadow-lg ring-1 ring-black/10">
+        <div className="w-full order-2 lg:-order-2 text-center lg:text-left md:flex md:flex-col  md:space-y-4 max-w-xl lg:max-w-2xl backdrop-blur-sm rounded-xl p-6 text-gray-800  bg-white/20 shadow-lg ring-1 ring-black/10">
           <h2 className="text-4xl ">MedRepo</h2>
           <p className="text-lg leading-5">
             Say goodbye to fragmented, insecure, and outdated health record

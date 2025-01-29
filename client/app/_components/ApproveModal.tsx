@@ -67,7 +67,7 @@ export default function Modal({ isOpen, setIsOpen, fileId }: ModalProps) {
                                         <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
                                             User ID:
                                         </label>
-                                        <div className="relative mt-2 rounded-md shadow-xs">
+                                        <div className="relative mt-2 rounded-md shadow-2xs">
                                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                                 <FaRegAddressCard aria-hidden="true" className="h-5 w-5 text-gray-400" />
                                             </div>
@@ -88,7 +88,7 @@ export default function Modal({ isOpen, setIsOpen, fileId }: ModalProps) {
                             <button
                                 type="button"
                                 onClick={handleApprove}
-                                className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 sm:ml-3 sm:w-auto"
+                                className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-2xs hover:bg-indigo-500 sm:ml-3 sm:w-auto"
                             >
                                 {isLoading ? "Approving" : "Approve"}
                             </button>
@@ -96,7 +96,7 @@ export default function Modal({ isOpen, setIsOpen, fileId }: ModalProps) {
                                 type="button"
                                 data-autofocus
                                 onClick={setIsOpen}
-                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                             >
                                 Cancel
                             </button>
