@@ -8,25 +8,19 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { handleSolidityError } from "@/utils/handleSolidityError";
 import { getContractWithAlchemy, getRole, getContractWithSigner } from '@/utils/contract.utils';
-import { useWallet } from "@/app/_context/WalletContext";
 
 function DoctorRegisterPage() {
-    const { } = useWallet();
     const [account, setAccount] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const router = useRouter();
 
     // Set up the contract and event listener for RoleAssigned event
     useEffect(() => {
-
         const handleRoleAssigned = (user: string, role: number) => {
+            setIsLoading(false);
             const roleName = getRole(Number(role));
-            console.log(role, typeof role);
-            toast.success("User Registered");
-            toast.message("Registration", {
-                description: `Address: ${user}, Role: ${roleName}`,
-            });
+            toast.info(`RoleAssigned event: User: ${user}, Role: ${roleName}`);
             router.push("/login");
-            console.log(`RoleAssigned event: User: ${user}, Role: ${roleName}`);
         };
 
         const alchemyContract = getContractWithAlchemy();
@@ -52,9 +46,10 @@ function DoctorRegisterPage() {
     const handleRegister = async () => {
         const contractWithSigner = await getContractWithSigner();
         try {
-            console.log("Registering as Doctor...");
+            setIsLoading(true);
             const tx = await contractWithSigner.registerUser(2);
             const recipt = await tx.wait();
+            console.log(recipt);
             if (recipt.status === 1) {
                 toast.success("Doctor Registered");
             } else {
@@ -94,9 +89,10 @@ function DoctorRegisterPage() {
 
                     <button
                         onClick={handleRegister}
-                        className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500"
+                        disabled={isLoading}
+                        className={`bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500 ${isLoading && "cursor-not-allowed"}`}
                     >
-                        Register Now
+                        {isLoading ? "Registering..." : "Register Now"}
                     </button>
                 </div>
             </div>
