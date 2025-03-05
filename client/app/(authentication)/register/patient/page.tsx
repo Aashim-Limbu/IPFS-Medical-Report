@@ -42,6 +42,7 @@ function RegisterPatientPage() {
             setIsLoading(true);
             const tx = await contractWithSigner.registerUser(1);
             const recipt = await tx.wait();
+            console.log("Recipt", recipt);
             if (recipt.status == 1) {
                 toast.success("User Registered");
             } else {
@@ -80,7 +81,7 @@ function RegisterPatientPage() {
                         onClick={handleRegister}
                         className="bg-indigo-600 p-2 rounded-md text-white font-semibold hover:bg-indigo-500"
                     >
-                        {isLoading? "Registering..." : "Register as Patient"}
+                        {isLoading ? "Registering..." : "Register as Patient"}
                     </button>
                 </div>
                 <div className='border-t-2 border-stone-400 mt-4 pt-2 underline font-semibold text-center'>

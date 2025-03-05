@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { GoFileDirectory } from "react-icons/go";
 import { formatEther } from 'ethers';
 import { getContractWithSigner } from '@/utils/contract.utils';
-import Modal from '@/app/_components/ApproveModal';
+import ApproveModal from '@/app/_components/ApproveModal';
 type FILE = {
     ipfsHash: string,
     name: string,
@@ -36,7 +36,7 @@ function CheckPage() {
     }, [connectWallet])
     return (
         <>
-            {isOpen && <Modal isOpen={isOpen} setIsOpen={() => { setIsOpen(false) }} fileId={select} />}
+            {isOpen && <ApproveModal isOpen={isOpen} setIsOpen={() => { setIsOpen(false) }} fileId={select} />}
             <div className="px-4 sm:px-6 lg:px-8 py-4 min-h-screen">
                 <div className="sm:flex sm:items-center">
                     <div className="sm:flex-auto">

@@ -9,7 +9,7 @@ type ModalProps = {
     setIsOpen: () => void;
     fileId: number | null
 }
-export default function Modal({ isOpen, setIsOpen, fileId }: ModalProps) {
+export default function ApproveModal({ isOpen, setIsOpen, fileId }: ModalProps) {
     console.log("fileId", fileId);
     const [isLoading, setIsLoading] = useState(false)
     const userIdRef = useRef<HTMLInputElement | null>(null);

@@ -6,14 +6,18 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import { parseUnits } from 'ethers';
 import { toast } from 'sonner';
+import { pinata } from '@/utils/pinataUtils';
+import DisplayFile, { FileType } from '@/app/_components/DisplayFile';
 
-type ApprovedFile = {
+
+export type ApprovedFile = {
     fileId: number;
     ownerId: number;
     price: string;
     fileName: string;
     paid: boolean;
 };
+
 const statuses = {
     Complete: 'text-green-700 bg-green-50 ring-green-600/20',
     Unpaid: 'text-rose-600 bg-rose-50 ring-rose-500/10',
@@ -24,6 +28,8 @@ function classNames(...classes: string[]) {
 
 function ApproveFilesPage() {
     const [approvedFiles, setApprovedFiles] = useState<ApprovedFile[]>([]);
+    const [selectedFile, setSelectedFile] = useState<FileType>(null);
+    const [viewFile , setViewFile] = useState(false);
     useEffect(() => {
         async function getApprovedFiles() {
             try {
@@ -47,6 +53,19 @@ function ApproveFilesPage() {
         }
         getApprovedFiles();
     }, []);
+    async function handleViewFile(file: ApprovedFile) {
+        try {
+            const contractWithSigner = await getContractWithSigner();
+            console.log(file)
+            const ipfsHash = await contractWithSigner.retrieveFile(file.ownerId, file.fileId);
+            console.log("IPFS Hash", ipfsHash);
+            const data = await pinata.gateways.get(ipfsHash);
+            setSelectedFile(data);
+            setViewFile(true);
+        } catch (error) {
+            console.error("Error on viewing Files: ", error);
+        }
+    }
     async function handlePayment(doctorId: number, fileId: number, fee: string) {
         try {
             const contractWithSigner = await getContractWithSigner();
@@ -96,15 +115,16 @@ function ApproveFilesPage() {
                                 <svg viewBox="0 0 2 2" className="h-0.5 w-0.5 fill-current">
                                     <circle r={1} cx={1} cy={1} />
                                 </svg>
-                                <p className="truncate">Approved by: {0}</p>
+                                <p className="truncate">Approved by: {file.ownerId}</p>
                             </div>
                         </div>
                         <div className="flex flex-none items-center gap-x-4">
 
                             {
-                                file.paid ? <button onClick={async () => await handlePayment(file.ownerId, file.fileId, file.price)} className="hidden rounded-md bg-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
-                                >Pay {file.price}</button> : <button
+                                !file.paid ? <button onClick={async () => await handlePayment(file.ownerId, file.fileId, file.price)} className="hidden rounded-md bg-gray-300 px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
+                                >Pay ${file.price}</button> : <button
                                     className="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-2xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block"
+                                    onClick={() => handleViewFile(file)}
                                 >
                                     View File<span className="sr-only">, {file.fileName}</span>
                                 </button>
@@ -129,6 +149,7 @@ function ApproveFilesPage() {
                     </li>
                 ))}
             </ul>
+                <DisplayFile file={selectedFile} isOpen={viewFile} setIsOpen={setViewFile} />
         </div>
     );
 }
