@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, WebSocketProvider } from "ethers";
-import contractAbi from "@/../contract/out/EHRManagement.sol/EHRManagement.json";
+import contractAbi from "./contractAbi.json";
 export function getRole(index: number) {
   switch (index) {
     case 0:
@@ -13,13 +13,16 @@ export function getRole(index: number) {
   }
 }
 export function getContractWithAlchemy() {
-  const wsProvider = new WebSocketProvider(
-    process.env.NEXT_PUBLIC_ALCHEMY_PROVIDER as string
+  const provider = new WebSocketProvider(
+    process.env.NEXT_PUBLIC_ALCHEMY_PROVIDER!
   );
+  provider.websocket.onopen = () => console.log("WebSocket connected");
+  provider.websocket.onerror = (error) =>
+    console.error("WebSocket error:", error);
   return new Contract(
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     contractAbi.abi,
-    wsProvider
+    provider
   );
 }
 export async function getContractWithSigner() {

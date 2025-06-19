@@ -7,7 +7,7 @@ import { useWallet } from '../_context/WalletContext';
 
 function ViewPage() {
     const [imageUrl, setImageUrl] = useState("");
-    const { contract, signer } = useWallet();
+    const { contractWithProvider } = useWallet();
     const [feed, setFeed] = useState("")
     async function handleClick() {
         const file = await pinata.gateways.get("bafkreib3rcmqkkcxsauxzthpjziybb7miuxqeb4ee6bavu3grqhan3orty");
@@ -20,8 +20,8 @@ function ViewPage() {
     }
     async function getFeed() {
         try {
-            if (!contract) return console.log("Contract Initailization Error. Please Connect with your Metamask first.")
-            const feedAddress = await contract.getFeed();
+            if (!contractWithProvider) return console.log("Contract Initailization Error. Please Connect with your Metamask first.")
+            const feedAddress = await contractWithProvider.getFeed();
             setFeed(feedAddress);
         } catch (error) {
             if (error instanceof Error) {

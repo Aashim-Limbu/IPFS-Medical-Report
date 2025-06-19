@@ -1,0 +1,327 @@
+{
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        { "name": "_priceFeed", "type": "address", "internalType": "address" }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getAccessStatus",
+      "inputs": [
+        { "name": "granterId", "type": "uint256", "internalType": "uint256" },
+        { "name": "fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct EHRManagement.FileAccess",
+          "components": [
+            { "name": "authorized", "type": "bool", "internalType": "bool" },
+            { "name": "paid", "type": "bool", "internalType": "bool" }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getFileFee",
+      "inputs": [
+        { "name": "userId", "type": "uint256", "internalType": "uint256" },
+        { "name": "fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getLatestPrice",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getMyFiles",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct EHRManagement.File[]",
+          "components": [
+            { "name": "fileHash", "type": "string", "internalType": "string" },
+            { "name": "fileName", "type": "string", "internalType": "string" },
+            { "name": "fileId", "type": "uint256", "internalType": "uint256" },
+            { "name": "fee", "type": "uint256", "internalType": "uint256" }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getSharedFiles",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct EHRManagement.SharedFile[]",
+          "components": [
+            { "name": "fileId", "type": "uint256", "internalType": "uint256" },
+            { "name": "ownerId", "type": "uint256", "internalType": "uint256" },
+            { "name": "price", "type": "uint256", "internalType": "uint256" },
+            { "name": "fileName", "type": "string", "internalType": "string" },
+            { "name": "paid", "type": "bool", "internalType": "bool" }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getUserId",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getUserRole",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum EHRManagement.Role"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "grantAccess",
+      "inputs": [
+        { "name": "_granteeId", "type": "uint256", "internalType": "uint256" },
+        { "name": "_fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "payForAccess",
+      "inputs": [
+        { "name": "_doctorId", "type": "uint256", "internalType": "uint256" },
+        { "name": "_fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "payable"
+    },
+    {
+      "type": "function",
+      "name": "registerUser",
+      "inputs": [
+        {
+          "name": "_role",
+          "type": "uint8",
+          "internalType": "enum EHRManagement.Role"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "retrieveFile",
+      "inputs": [
+        { "name": "_ownerId", "type": "uint256", "internalType": "uint256" },
+        { "name": "_fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "revokeAccess",
+      "inputs": [
+        { "name": "_granteeId", "type": "uint256", "internalType": "uint256" },
+        { "name": "_fileId", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "uploadReport",
+      "inputs": [
+        { "name": "_ipfsHash", "type": "string", "internalType": "string" },
+        { "name": "_name", "type": "string", "internalType": "string" },
+        { "name": "_fee", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "AccessGranted",
+      "inputs": [
+        {
+          "name": "granterId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "granteeId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "fileId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "AccessRevoked",
+      "inputs": [
+        {
+          "name": "granterId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "granteeId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "fileId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "FileUploaded",
+      "inputs": [
+        {
+          "name": "userId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "fileId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "fileHash",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "fee",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PaymentReceived",
+      "inputs": [
+        {
+          "name": "patientId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "doctorId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "fileId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RoleAssigned",
+      "inputs": [
+        {
+          "name": "userId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "role",
+          "type": "uint8",
+          "indexed": false,
+          "internalType": "enum EHRManagement.Role"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "UserRegistered",
+      "inputs": [
+        {
+          "name": "user",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "userId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    { "type": "error", "name": "FileNotFound", "inputs": [] },
+    { "type": "error", "name": "InsufficientPayment", "inputs": [] },
+    { "type": "error", "name": "InvalidCaller", "inputs": [] },
+    { "type": "error", "name": "PermissionDenied", "inputs": [] },
+    { "type": "error", "name": "RoleAlreadyAssigned", "inputs": [] },
+    { "type": "error", "name": "UserNotRegistered", "inputs": [] }
+  ]
+}
